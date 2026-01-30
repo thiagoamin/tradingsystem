@@ -1,0 +1,1 @@
+We use Google style to document the code.
