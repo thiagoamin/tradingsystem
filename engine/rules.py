@@ -2,29 +2,29 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 
 from .state import MarketState
-from .events import SignalEvent
+from .events import Event
 
 class Rule(ABC):
     """
-    Anything that can evaluate a MarketState and emit zero or more SignalEvents.
+    Anything that can evaluate a MarketState and emit zero or more Events.
         'Given this MarketState, should I emit signals?'
     """
     @abstractmethod
-    def evaluate(self, state: MarketState) -> List[SignalEvent]:
+    def evaluate(self, state: MarketState) -> List[Event]:
         ...
 
 class AtomicRule(ABC):
-    """ Anything that can evaluate a MarketState and emit zero or one SignalEvents.
+    """ Anything that can evaluate a MarketState and emit zero or one Events.
         Subclasses implement `_evaluate_one`.
     """
 
-    def evaluate(self, state: MarketState) -> List[SignalEvent]:
+    def evaluate(self, state: MarketState) -> List[Event]:
         event = self._evaluate_one(state)
         return [event] if event is not None else []
 
     @abstractmethod
-    def _evaluate_one(self, state: MarketState) -> Optional[SignalEvent]:
-        """Return a SignalEvent if the rule fires, otherwise None."""
+    def _evaluate_one(self, state: MarketState) -> Optional[Event]:
+        """Return an Event if the rule fires, otherwise None."""
         ...
 
 class PercentDropRule(AtomicRule):
@@ -35,7 +35,9 @@ class PercentDropRule(AtomicRule):
     def _evaluate_one(self, state: MarketState):
         ret = state.indicator(self.ticker, "daily_return")
         if ret <= self.threshold:
-            return SignalEvent(
+            return Event(
+                ts=state.timestamp,
+                type="signal",
                 name="pct_drop",
                 message=f"{self.ticker} dropped {ret:.2%}",
                 severity="warn",
@@ -53,7 +55,9 @@ class MovingAverageCrossRule(AtomicRule):
         s = state.indicator(self.ticker, f"ma_{self.short}")
         l = state.indicator(self.ticker, f"ma_{self.long}")
         if s > l:
-            return SignalEvent(
+            return Event(
+                ts=state.timestamp,
+                type="signal",
                 name="ma_cross",
                 message=f"{self.ticker}: MA{self.short} crossed above MA{self.long}",
                 severity="info",

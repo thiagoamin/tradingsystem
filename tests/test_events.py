@@ -1,8 +1,12 @@
-from engine.events import SignalEvent
+from datetime import datetime
+
+from engine.events import Event
 
 
-def test_signal_event_fields():
-    ev = SignalEvent(
+def test_event_fields():
+    ev = Event(
+        ts=datetime.now(),
+        type="signal",
         name="test",
         message="hello",
         severity="info",

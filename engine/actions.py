@@ -1,11 +1,20 @@
+from abc import ABC
 from dataclasses import dataclass
 
 @dataclass(frozen=True)
-class Action:
+class Action(ABC):
     """
-    Represents an INTENDED trading action. NOT an order (yet).
+    Base class for all strategy intents.
+
+    An Action represents *what the strategy wants*, not *how to execute it*.
     """
-    ticker: str 
-    target_position: int # “How much of this asset do I want to hold?” (e.g., + 100, 0, - 50)
     reason: str
+
+@dataclass(frozen=True)
+class SetTargetPosition(Action):
+    """
+    ...
+    """
+    ticker: str
+    target_qty: int
 

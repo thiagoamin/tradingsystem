@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from engine.engine import MarketState
+from engine.state import MarketState
 from engine.engine import SignalEngine
 from engine.rules import PercentDropRule, MovingAverageCrossRule
 

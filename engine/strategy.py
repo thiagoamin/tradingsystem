@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import List
 from .state import MarketState
-from .actions import Action
+from .actions import Action, SetTargetPosition
+from .portfolio import Portfolio
+from .events import Event
+
 
 class Strategy(ABC):
     """
@@ -9,7 +12,7 @@ class Strategy(ABC):
     """
 
     @abstractmethod
-    def decide(self, state:MarketState) -> List[Action]:
+    def decide(self, state: MarketState, portfolio: Portfolio, signals: List[Event]) -> List[Action]:
         """
         Return List[Action] if a decision is made, else [].
         """
