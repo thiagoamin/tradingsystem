@@ -4,7 +4,7 @@ from typing import List, Tuple
 from .portfolio import Portfolio
 from .state import MarketState
 from .events import Event
-from .strategy import Action
+from .actions import Action
 
 class RiskManager(ABC):
     @abstractmethod
@@ -28,3 +28,11 @@ class BasicRiskManager(RiskManager):
         # Stub: later compute leverage/limits properly.
         # For now, do nothing but keep the interface stable.
         return allowed, events
+
+    def _gross_exposure(self, portfolio: Portfolio, state: MarketState) -> float:
+        # TODO: compute sum(|qty| * price)
+        return 0.0
+
+    def _equity(self, portfolio: Portfolio, state: MarketState) -> float:
+        # TODO: compute cash + market value
+        return 0.0
