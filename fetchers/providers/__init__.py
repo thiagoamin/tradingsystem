@@ -1,4 +1,6 @@
-from .ibkr import IBKRFetcher
+from .ibkr import IBKRHistoricalFetcher, IBKRLiveFetcher
 from .csv import CSVFetcher
 
-__all__ = ["CSVFetcher", "IBKRFetcher"]
+IBKRFetcher = IBKRHistoricalFetcher
+
+__all__ = ["CSVFetcher", "IBKRFetcher", "IBKRHistoricalFetcher", "IBKRLiveFetcher"]

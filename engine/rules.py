@@ -13,7 +13,7 @@ class Rule(ABC):
     def evaluate(self, state: MarketState) -> List[Event]:
         ...
 
-class AtomicRule(ABC):
+class AtomicRule(Rule):
     """ Anything that can evaluate a MarketState and emit zero or one Events.
         Subclasses implement `_evaluate_one`.
     """
