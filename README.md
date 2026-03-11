@@ -21,5 +21,3 @@ The core architecture is:
 - `fetchers/` - provider abstraction and data models.
 - `research/` - experimental backtesting and signal/utility exploration.
 - `tests/` - unit tests for core modules.
-
-Each folder now has its own `README.md` with detailed progress and next steps.
