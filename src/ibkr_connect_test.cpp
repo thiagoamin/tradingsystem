@@ -2,14 +2,14 @@
 #include <thread>
 #include <chrono>
 
-#include "EWrapper.h"
+#include "DefaultEWrapper.h"
 #include "EClientSocket.h"
 #include "EReaderOSSignal.h"
 
-class TestWrapper : public EWrapper
+class TestWrapper : public DefaultEWrapper
 {
 public:
-    void error(int id, int errorCode, const std::string &errorString) override
+    void error(int id, time_t errorTime, int errorCode, const std::string &errorString, const std::string &advancedOrderRejectJson) override
     {
         std::cout << "Error. Id: " << id
                   << ", Code: " << errorCode
