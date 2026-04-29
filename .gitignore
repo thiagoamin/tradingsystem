@@ -15,3 +15,11 @@ venv/
 
 # OS
 .DS_Store
+
+# Credentials
+fetchers_new/thetadata/creds.txt
+
+# Data
+data_new/thetadata_raw/
+
+*.egg-info/
