@@ -1,4 +1,5 @@
 #include "IbkrClient.h"
+#include "utils/TimeUtils.h"
 
 #include <iostream>
 
@@ -22,13 +23,15 @@ bool IbkrClient::connect(const char *host, int port, int clientId)
 
     if (ok)
     {
-        printf("Successfully connected to %s:%d clientId:%d serverVersion: %d\n", pClientSocket_->host().c_str(), pClientSocket_->port(), clientId, pClientSocket_->EClient::serverVersion());
+        printf("Successfully connected to %s:%d clientId:%d serverVersion: %d\n",
+               pClientSocket_->host().c_str(), pClientSocket_->port(), clientId, pClientSocket_->EClient::serverVersion());
 
         pReader_ = std::make_unique<EReader>(pClientSocket_.get(), &osSignal_);
         pReader_->start();
     }
     else
-        printf("Failed to connect to %s:%d clientId:%d\n", pClientSocket_->host().c_str(), pClientSocket_->port(), clientId);
+        printf("Failed to connect to %s:%d clientId:%d\n",
+               pClientSocket_->host().c_str(), pClientSocket_->port(), clientId);
 
     return ok;
 }
@@ -94,4 +97,40 @@ void IbkrClient::error(int id, time_t errorTime, int errorCode,
         printf("Error. Id: %d, Time: %s, Code: %d, Msg: %s\n",
                id, errorTimeStr, errorCode, errorString.c_str());
     }
+}
+
+MarketTickType IbkrClient::mapTickType(TickType field)
+{
+    switch (field)
+    {
+    case BID:
+        return MarketTickType::Bid;
+    case ASK:
+        return MarketTickType::Ask;
+    case LAST:
+        return MarketTickType::Last;
+    case DELAYED_BID:
+        return MarketTickType::DelayedBid;
+    case DELAYED_ASK:
+        return MarketTickType::DelayedAsk;
+    case DELAYED_LAST:
+        return MarketTickType::DelayedLast;
+    default:
+        return MarketTickType::Unknown;
+    }
+}
+
+void IbkrClient::tickPrice(TickerId tickerId, TickType field,
+                           double price,
+                           const TickAttrib &attribs)
+{
+    TickEvent event;
+
+    event.tickerId = tickerId;
+    event.tickType = mapTickType(field);
+    event.price = price;
+    event.timeStamp_ns = now_ns();
+
+    // printf("Tick Price. Ticker Id: %ld, Field: %d, Price: %s, CanAutoExecute: %d, PastLimit: %d, PreOpen: %d\n",
+    //        tickerId, (int)field, Utils::doubleMaxString(price).c_str(), attribs.canAutoExecute, attribs.pastLimit, attribs.preOpen);
 }

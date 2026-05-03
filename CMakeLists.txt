@@ -25,11 +25,31 @@ file(GLOB IBKR_PROTO_SOURCES
     "${CMAKE_SOURCE_DIR}/third_party/ibkr_10.37/source/cppclient/client/protobufUnix/*.cc"
 )
 
+file(GLOB_RECURSE PROJECT_SOURCES
+    "${CMAKE_SOURCE_DIR}/src/*.cpp"
+)
+
+list(FILTER PROJECT_SOURCES EXCLUDE REGEX ".*ibkr_smoke_test\\.cpp$")
+list(FILTER PROJECT_SOURCES EXCLUDE REGEX ".*ibkr_connect_test\\.cpp$")
+
 set(IBKR_INCLUDE_DIRS
     "${IBKR_CLIENT_DIR}"
     "${CMAKE_SOURCE_DIR}/third_party/ibkr_10.37/source/cppclient"
     "${CMAKE_SOURCE_DIR}/third_party/ibkr_10.37/source"
     "${CMAKE_SOURCE_DIR}/third_party/ibkr_10.37/source/cppclient/client/protobufUnix"
+)
+
+add_executable(projectorion
+    "${CMAKE_SOURCE_DIR}/src/main.cpp"
+    ${PROJECT_SOURCES}
+    ${IBKR_CLIENT_SOURCES}
+    ${IBKR_PROTO_SOURCES}
+)
+
+target_include_directories(projectorion PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${IBKR_INCLUDE_DIRS}
+    ${Protobuf_INCLUDE_DIRS}
 )
 
 add_executable(ibkr_smoke_test
@@ -69,6 +89,10 @@ target_link_directories(ibkr_smoke_test PRIVATE
 target_link_directories(ibkr_connect_test PRIVATE
     "${CMAKE_SOURCE_DIR}/third_party/ibkr_10.37/source/cppclient/client/lib"
 )
+target_link_directories(projectorion PRIVATE
+    "${CMAKE_SOURCE_DIR}/third_party/ibkr_10.37/source/cppclient/client/lib"
+)
 
 target_link_libraries(ibkr_smoke_test PRIVATE protobuf::libprotobuf bid)
 target_link_libraries(ibkr_connect_test PRIVATE protobuf::libprotobuf bid)
+target_link_libraries(projectorion PRIVATE protobuf::libprotobuf bid)
