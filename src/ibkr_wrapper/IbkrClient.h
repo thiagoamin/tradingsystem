@@ -18,10 +18,10 @@ public:
     IbkrClient();
     ~IbkrClient();
 
+    // public functions
     bool connect(const char *host, int port, int clientId);
     void disconnect();
     bool isConnected() const;
-    void processMessages();
 
     // IBKR callbacks
     void connectAck() override;
@@ -29,10 +29,11 @@ public:
     void error(int id, time_t errorTime, int errorCode,
                const std::string &errorString,
                const std::string &advancedOrderRejectJson) override;
-
     void tickPrice(TickerId tickerId, TickType field,
                    double price,
                    const TickAttrib &attribs) override;
+    void tickSize(TickerId tickerId, TickType field,
+                  Decimal size) override;
 
 private:
     EReaderOSSignal osSignal_;
@@ -41,5 +42,8 @@ private:
 
     OrderId orderId_;
 
+    // private functions
+    void processMessages();
+    void subscribe(int reqId, const Contract &contract);
     MarketTickType mapTickType(TickType field);
 };

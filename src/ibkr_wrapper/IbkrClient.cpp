@@ -47,14 +47,6 @@ bool IbkrClient::isConnected() const
 {
     return pClientSocket_ && pClientSocket_->isConnected();
 }
-void IbkrClient::processMessages()
-{
-    osSignal_.waitForSignal();
-    if (pReader_)
-    {
-        pReader_->processMsgs();
-    }
-}
 
 void IbkrClient::connectAck()
 {
@@ -99,6 +91,44 @@ void IbkrClient::error(int id, time_t errorTime, int errorCode,
     }
 }
 
+// IBKR Tick Price Updates
+void IbkrClient::tickPrice(TickerId tickerId, TickType field,
+                           double price,
+                           const TickAttrib &attribs)
+{
+    TickEvent event;
+
+    event.tickerId = tickerId;
+    event.tickType = mapTickType(field);
+    event.price = price;
+    event.timeStamp_ns = now_ns();
+
+    // printf("Tick Price. Ticker Id: %ld, Field: %d, Price: %s, CanAutoExecute: %d, PastLimit: %d, PreOpen: %d\n",
+    //        tickerId, (int)field, Utils::doubleMaxString(price).c_str(), attribs.canAutoExecute, attribs.pastLimit, attribs.preOpen);
+}
+
+// IBKR Tick Size Updates
+void IbkrClient::tickSize(TickerId tickerId, TickType field,
+                          Decimal size)
+{
+}
+
+void IbkrClient::processMessages()
+{
+    osSignal_.waitForSignal();
+    if (pReader_)
+    {
+        pReader_->processMsgs();
+    }
+}
+
+void IbkrClient::subscribe(int reqId, const Contract &contract)
+{
+    // reqId_to_instrument_[reqId] = mapSymbolToId(contract.symbol);
+
+    pClientSocket_->reqMktData(reqId, contract, "", false, false, {});
+}
+
 MarketTickType IbkrClient::mapTickType(TickType field)
 {
     switch (field)
@@ -118,19 +148,4 @@ MarketTickType IbkrClient::mapTickType(TickType field)
     default:
         return MarketTickType::Unknown;
     }
-}
-
-void IbkrClient::tickPrice(TickerId tickerId, TickType field,
-                           double price,
-                           const TickAttrib &attribs)
-{
-    TickEvent event;
-
-    event.tickerId = tickerId;
-    event.tickType = mapTickType(field);
-    event.price = price;
-    event.timeStamp_ns = now_ns();
-
-    // printf("Tick Price. Ticker Id: %ld, Field: %d, Price: %s, CanAutoExecute: %d, PastLimit: %d, PreOpen: %d\n",
-    //        tickerId, (int)field, Utils::doubleMaxString(price).c_str(), attribs.canAutoExecute, attribs.pastLimit, attribs.preOpen);
 }

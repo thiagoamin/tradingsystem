@@ -17,8 +17,13 @@ enum class MarketTickType
 
 struct TickEvent
 {
-    TickerId tickerId;
-    MarketTickType tickType;
-    double price;
+    int32_t instrumentId;
+
     int64_t timeStamp_ns; // absolute time in nanoseconds
+    MarketTickType tickType;
+
+    TickerId tickerId;
+
+    double price;
+    long long size;
 };
