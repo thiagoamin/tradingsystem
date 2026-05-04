@@ -24,3 +24,22 @@ Contract OrionTradingContract::SPY()
 {
     return makeStock("SPY");
 }
+Contract OrionTradingContract::MSFT()
+{
+    return makeStock("MSFT");
+}
+
+Contract OrionTradingContract::NVDA()
+{
+    return makeStock("NVDA");
+}
+
+Contract OrionTradingContract::GOOGL()
+{
+    return makeStock("GOOGL");
+}
+
+Contract OrionTradingContract::AMZN()
+{
+    return makeStock("AMZN");
+}

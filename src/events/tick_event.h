@@ -22,8 +22,6 @@ struct TickEvent
     int64_t timeStamp_ns; // absolute time in nanoseconds
     MarketTickType tickType;
 
-    TickerId tickerId;
-
     double price;
     long long size;
 };

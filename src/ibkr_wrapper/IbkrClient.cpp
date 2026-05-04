@@ -1,10 +1,15 @@
 #include "IbkrClient.h"
 #include "utils/TimeUtils.h"
+#include "OrionTradingContract.h"
 
 #include <iostream>
 
 // 2s to wait for signal before timeout
-IbkrClient::IbkrClient() : osSignal_(2000), pClientSocket_(std::make_unique<EClientSocket>(this, &osSignal_)), orderId_(0)
+IbkrClient::IbkrClient() : osSignal_(2000),
+                           pClientSocket_(std::make_unique<EClientSocket>(this, &osSignal_)),
+                           state_(CONNECT),
+                           orderId_(0),
+                           subscribed_(false)
 {
 }
 
@@ -15,6 +20,7 @@ IbkrClient::~IbkrClient()
 
 bool IbkrClient::connect(const char *host, int port, int clientId)
 {
+    // TODO: Connection retry
     // 1. Log attempt to connect
     printf("Connecting to %s:%d clientId:%d\n", !(host && *host) ? "127.0.0.1" : host, port, clientId);
 
@@ -48,15 +54,44 @@ bool IbkrClient::isConnected() const
     return pClientSocket_ && pClientSocket_->isConnected();
 }
 
+// Main loop
+void IbkrClient::run()
+{
+    // TODO: implement threads
+    // TODO: implement better FSM
+    switch (state_)
+    {
+    case CONNECT:
+        break;
+    case RUN:
+        processMessages();
+        break;
+    case ERROR:
+        break;
+    }
+}
+
 void IbkrClient::connectAck()
 {
     std::cout << "Connect ACK\n";
     pClientSocket_->startApi();
 };
+
+// can't subscribe until we get nextValidId callback
 void IbkrClient::nextValidId(OrderId orderId)
 {
     orderId_ = orderId;
     std::cout << "Next valid order id: " << orderId_ << "\n";
+
+    // TODO: redo this when disconnect
+    if (!subscribed_)
+    {
+        subscribe();
+        subscribed_ = true;
+    }
+
+    // TODO make no error occured to be in the RUN state
+    state_ = RUN;
 };
 void IbkrClient::error(int id, time_t errorTime, int errorCode,
                        const std::string &errorString,
@@ -96,12 +131,27 @@ void IbkrClient::tickPrice(TickerId tickerId, TickType field,
                            double price,
                            const TickAttrib &attribs)
 {
+    // map tickerId to reqId
+    // TODO rename it
+    auto it = reqId_to_instrument_.find(tickerId);
+    if (it == reqId_to_instrument_.end())
+    {
+        printf("UNKNOWN tickerId");
+        return;
+    }
+
+    // MarketTickType tickType = mapTickType(field);
+    // if (tickType == MarketTickType::Unknown) return;
+
     TickEvent event;
 
-    event.tickerId = tickerId;
+    event.instrumentId = it->second;
+    event.timeStamp_ns = now_ns();
     event.tickType = mapTickType(field);
     event.price = price;
-    event.timeStamp_ns = now_ns();
+    event.size = 0;
+
+    // TODO: push to MarketDataEngine / queue
 
     // printf("Tick Price. Ticker Id: %ld, Field: %d, Price: %s, CanAutoExecute: %d, PastLimit: %d, PreOpen: %d\n",
     //        tickerId, (int)field, Utils::doubleMaxString(price).c_str(), attribs.canAutoExecute, attribs.pastLimit, attribs.preOpen);
@@ -113,6 +163,7 @@ void IbkrClient::tickSize(TickerId tickerId, TickType field,
 {
 }
 
+// Core event loop
 void IbkrClient::processMessages()
 {
     osSignal_.waitForSignal();
@@ -122,11 +173,34 @@ void IbkrClient::processMessages()
     }
 }
 
-void IbkrClient::subscribe(int reqId, const Contract &contract)
+void IbkrClient::subscribe()
 {
-    // reqId_to_instrument_[reqId] = mapSymbolToId(contract.symbol);
+    pClientSocket_->reqMarketDataType(4);
 
-    pClientSocket_->reqMktData(reqId, contract, "", false, false, {});
+    subscribeMarketData(1001, 1, OrionTradingContract::TSLA());
+    subscribeMarketData(1002, 2, OrionTradingContract::AAPL());
+    subscribeMarketData(1003, 3, OrionTradingContract::SPY());
+    subscribeMarketData(1004, 4, OrionTradingContract::MSFT());
+    subscribeMarketData(1005, 5, OrionTradingContract::NVDA());
+    subscribeMarketData(1006, 6, OrionTradingContract::GOOGL());
+    subscribeMarketData(1007, 7, OrionTradingContract::AMZN());
+
+    // TODO print if sub is successful
+}
+
+void IbkrClient::subscribeMarketData(TickerId reqId,
+                                     int32_t instrumentId,
+                                     const Contract &contract)
+{
+    reqId_to_instrument_[reqId] = instrumentId;
+
+    pClientSocket_->reqMktData(
+        reqId,
+        contract,
+        "",
+        false,
+        false,
+        {});
 }
 
 MarketTickType IbkrClient::mapTickType(TickType field)

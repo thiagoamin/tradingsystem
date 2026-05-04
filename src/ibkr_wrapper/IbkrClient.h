@@ -11,6 +11,14 @@
 #include <memory>
 #include <string>
 #include <ctime>
+#include <unordered_map>
+
+enum STATE
+{
+    CONNECT,
+    RUN,
+    ERROR,
+};
 
 class IbkrClient : public DefaultEWrapper
 {
@@ -22,6 +30,7 @@ public:
     bool connect(const char *host, int port, int clientId);
     void disconnect();
     bool isConnected() const;
+    void run(); // run trading system
 
     // IBKR callbacks
     void connectAck() override;
@@ -40,10 +49,14 @@ private:
     std::unique_ptr<EClientSocket> pClientSocket_;
     std::unique_ptr<EReader> pReader_;
 
+    std::unordered_map<TickerId, int32_t> reqId_to_instrument_;
+    STATE state_;
+    bool subscribed_;
     OrderId orderId_;
 
     // private functions
     void processMessages();
-    void subscribe(int reqId, const Contract &contract);
+    void subscribe();
+    void subscribeMarketData(TickerId reqId, int32_t instrumentId, const Contract &contract);
     MarketTickType mapTickType(TickType field);
 };
