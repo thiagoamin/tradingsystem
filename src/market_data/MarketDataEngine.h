@@ -1,6 +1,6 @@
 #pragma once
 
-#include "events/tick_event.h"
+#include "events/tradeTickEvent.h"
 #include "BarBuilder.h"
 
 class MarketDataEngine
@@ -10,6 +10,6 @@ public:
     ~MarketDataEngine();
 
 private:
-    void onTick(const TickEvent &tick);
+    void onTick(const TradeTick &tick);
     BarBuilder barBuilder_;
 };

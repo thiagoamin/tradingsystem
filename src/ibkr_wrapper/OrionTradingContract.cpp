@@ -10,6 +10,16 @@ Contract OrionTradingContract::makeStock(const std::string &symbol)
     return c;
 }
 
+Contract OrionTradingContract::SPY()
+{
+    return makeStock("SPY");
+}
+
+Contract OrionTradingContract::QQQ()
+{
+    return makeStock("QQQ");
+}
+
 Contract OrionTradingContract::TSLA()
 {
     return makeStock("TSLA");
@@ -20,10 +30,6 @@ Contract OrionTradingContract::AAPL()
     return makeStock("AAPL");
 }
 
-Contract OrionTradingContract::SPY()
-{
-    return makeStock("SPY");
-}
 Contract OrionTradingContract::MSFT()
 {
     return makeStock("MSFT");

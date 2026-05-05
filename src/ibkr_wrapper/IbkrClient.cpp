@@ -141,20 +141,20 @@ void IbkrClient::tickPrice(TickerId tickerId, TickType field,
         return;
     }
 
-    MarketTickType tickType = mapTickType(field);
-    if (tickType == MarketTickType::Unknown)
-    {
-        printf("UNKNOWN tick type");
-        return;
-    }
+    // MarketTickType tickType = mapTickType(field);
+    // if (tickType == MarketTickType::Unknown)
+    // {
+    //     printf("UNKNOWN tick type");
+    //     return;
+    // }
 
-    TickEvent event;
+    // TradeTick event;
 
-    event.instrumentId = it->second;
-    event.timeStamp_ns = now_ns();
-    event.tickType = mapTickType(field);
-    event.price = price;
-    event.size = 0;
+    // event.instrumentId = it->second;
+    // event.timeStamp_ns = now_ns();
+    // event.tickType = mapTickType(field);
+    // event.price = price;
+    // event.size = 0;
 
     // TODO: push to MarketDataEngine / queue
 
@@ -167,6 +167,30 @@ void IbkrClient::tickSize(TickerId tickerId, TickType field,
                           Decimal size)
 {
     // TODO: make cache to get size
+}
+
+void IbkrClient::tickByTickAllLast(int reqId,
+                                   int tickType,
+                                   time_t time,
+                                   double price,
+                                   Decimal size,
+                                   const TickAttribLast &tickAttribLast,
+                                   const std::string &exchange,
+                                   const std::string &specialConditions)
+{
+    auto it = reqId_to_instrument_.find(reqId);
+    if (it == reqId_to_instrument_.end())
+    {
+        printf("UNKNOWN ticker id");
+        return;
+    }
+
+    TradeTick event;
+
+    event.instrumentId = it->second;
+    event.timeStamp_ns = time;
+    event.price = price;
+    event.size = convertDecimalToShares1e4(size);
 }
 
 // Core event loop
@@ -183,20 +207,30 @@ void IbkrClient::subscribe()
 {
     pClientSocket_->reqMarketDataType(4);
 
-    subscribeMarketData(1001, 1, OrionTradingContract::TSLA());
-    subscribeMarketData(1002, 2, OrionTradingContract::AAPL());
-    subscribeMarketData(1003, 3, OrionTradingContract::SPY());
-    subscribeMarketData(1004, 4, OrionTradingContract::MSFT());
-    subscribeMarketData(1005, 5, OrionTradingContract::NVDA());
-    subscribeMarketData(1006, 6, OrionTradingContract::GOOGL());
-    subscribeMarketData(1007, 7, OrionTradingContract::AMZN());
+    reqQuoteData(1001, 1, OrionTradingContract::SPY());
+    reqQuoteData(1002, 2, OrionTradingContract::QQQ());
+    reqQuoteData(1003, 3, OrionTradingContract::TSLA());
+    reqQuoteData(1004, 4, OrionTradingContract::AAPL());
+    reqQuoteData(1005, 5, OrionTradingContract::MSFT());
+    reqQuoteData(1006, 6, OrionTradingContract::NVDA());
+    reqQuoteData(1007, 7, OrionTradingContract::GOOGL());
+    reqQuoteData(1008, 8, OrionTradingContract::AMZN());
+
+    reqTickByTickData(20001, 1, OrionTradingContract::SPY());
+    reqTickByTickData(20002, 2, OrionTradingContract::QQQ());
+    reqTickByTickData(20003, 3, OrionTradingContract::TSLA());
+    reqTickByTickData(20004, 4, OrionTradingContract::AAPL());
+    reqTickByTickData(20005, 5, OrionTradingContract::MSFT());
+    reqTickByTickData(20006, 6, OrionTradingContract::NVDA());
+    reqTickByTickData(20007, 7, OrionTradingContract::GOOGL());
+    reqTickByTickData(20008, 8, OrionTradingContract::AMZN());
 
     // TODO print if sub is successful
 }
 
-void IbkrClient::subscribeMarketData(TickerId reqId,
-                                     int32_t instrumentId,
-                                     const Contract &contract)
+void IbkrClient::reqQuoteData(TickerId reqId,
+                              int32_t instrumentId,
+                              const Contract &contract)
 {
     reqId_to_instrument_[reqId] = instrumentId;
 
@@ -209,23 +243,45 @@ void IbkrClient::subscribeMarketData(TickerId reqId,
         TagValueListSPtr());
 }
 
-MarketTickType IbkrClient::mapTickType(TickType field)
+void IbkrClient::reqTickByTickData(TickerId reqId,
+                                   int32_t instrumentId,
+                                   const Contract &contract)
 {
-    switch (field)
-    {
-    case BID:
-        return MarketTickType::Bid;
-    case ASK:
-        return MarketTickType::Ask;
-    case LAST:
-        return MarketTickType::Last;
-    case DELAYED_BID:
-        return MarketTickType::DelayedBid;
-    case DELAYED_ASK:
-        return MarketTickType::DelayedAsk;
-    case DELAYED_LAST:
-        return MarketTickType::DelayedLast;
-    default:
-        return MarketTickType::Unknown;
-    }
+    reqId_to_instrument_[reqId] = instrumentId;
+
+    pClientSocket_->reqTickByTickData(
+        reqId,
+        contract,
+        "AllLast", // All trades tickType
+        0,
+        false);
 }
+
+// Converts IBKR Decimal → fixed-point shares (1 share = 10,000 units)
+int64_t IbkrClient::convertDecimalToShares1e4(Decimal size)
+{
+    // Best course of action to avoid double for better memory and make our code modular
+    // Won't be the bottle neck in latency
+    return static_cast<int64_t>(DecimalFunctions::decimalToDouble(size) * 10'000);
+}
+
+// MarketTickType IbkrClient::mapTickType(TickType field)
+// {
+//     switch (field)
+//     {
+//     case BID:
+//         return MarketTickType::Bid;
+//     case ASK:
+//         return MarketTickType::Ask;
+//     case LAST:
+//         return MarketTickType::Last;
+//     case DELAYED_BID:
+//         return MarketTickType::DelayedBid;
+//     case DELAYED_ASK:
+//         return MarketTickType::DelayedAsk;
+//     case DELAYED_LAST:
+//         return MarketTickType::DelayedLast;
+//     default:
+//         return MarketTickType::Unknown;
+//     }
+// }

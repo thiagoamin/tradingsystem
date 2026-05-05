@@ -4,7 +4,7 @@
 
 MarketDataEngine::~MarketDataEngine() {}
 
-void MarketDataEngine::onTick(const TickEvent &tick)
+void MarketDataEngine::onTick(const TradeTick &tick)
 {
     barBuilder_.onTick(tick);
 };

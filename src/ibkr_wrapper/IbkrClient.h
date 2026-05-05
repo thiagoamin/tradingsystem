@@ -4,8 +4,10 @@
 #include "EReaderOSSignal.h"
 #include "EReader.h"
 #include "EClientSocket.h"
-#include "events/tick_event.h"
+#include "events/tradeTickEvent.h"
+#include "events/quoteSnapshotEvent.h"
 #include "Contract.h"
+#include "Decimal.h"
 
 #include <cstring>
 #include <cstdio>
@@ -20,6 +22,17 @@ enum STATE
     RUN,
     ERROR,
 };
+
+// enum class MarketTickType
+// {
+//     Bid,
+//     Ask,
+//     Last,
+//     DelayedBid,
+//     DelayedAsk,
+//     DelayedLast,
+//     Unknown
+// };
 
 class IbkrClient : public DefaultEWrapper
 {
@@ -36,21 +49,33 @@ public:
     // IBKR callbacks
     void connectAck() override;
     void nextValidId(OrderId orderId) override;
-    void error(int id, time_t errorTime, int errorCode,
+    void error(int id,
+               time_t errorTime,
+               int errorCode,
                const std::string &errorString,
                const std::string &advancedOrderRejectJson) override;
-    void tickPrice(TickerId tickerId, TickType field,
+    void tickPrice(TickerId tickerId,
+                   TickType field,
                    double price,
                    const TickAttrib &attribs) override;
-    void tickSize(TickerId tickerId, TickType field,
+    void tickSize(TickerId tickerId,
+                  TickType field,
                   Decimal size) override;
+    void tickByTickAllLast(int reqId,
+                           int tickType,
+                           time_t time,
+                           double price,
+                           Decimal size,
+                           const TickAttribLast &tickAttribLast,
+                           const std::string &exchange,
+                           const std::string &specialConditions) override;
 
 private:
     EReaderOSSignal osSignal_;
     std::unique_ptr<EClientSocket> pClientSocket_;
     std::unique_ptr<EReader> pReader_;
 
-    std::unordered_map<TickerId, int32_t> reqId_to_instrument_;
+    std::unordered_map<TickerId, int32_t> reqId_to_instrument_; // TODO static?
     STATE state_;
     bool subscribed_;
     OrderId orderId_;
@@ -58,6 +83,8 @@ private:
     // private functions
     void processMessages();
     void subscribe();
-    void subscribeMarketData(TickerId reqId, int32_t instrumentId, const Contract &contract);
-    MarketTickType mapTickType(TickType field);
+    void reqQuoteData(TickerId reqId, int32_t instrumentId, const Contract &contract);
+    void reqTickByTickData(TickerId reqId, int32_t instrumentId, const Contract &contract);
+    int64_t convertDecimalToShares1e4(Decimal size);
+    // MarketTickType mapTickType(TickType field);
 };

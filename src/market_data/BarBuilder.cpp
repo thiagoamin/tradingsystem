@@ -6,6 +6,6 @@ BarBuilder::~BarBuilder()
 {
 }
 
-void BarBuilder::onTick(TickEvent tick)
+void BarBuilder::onTick(TradeTick tick)
 {
 }
