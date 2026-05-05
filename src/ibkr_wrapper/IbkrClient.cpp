@@ -1,6 +1,7 @@
 #include "IbkrClient.h"
 #include "utils/TimeUtils.h"
 #include "OrionTradingContract.h"
+#include "TagValue.h"
 
 #include <iostream>
 
@@ -136,12 +137,16 @@ void IbkrClient::tickPrice(TickerId tickerId, TickType field,
     auto it = reqId_to_instrument_.find(tickerId);
     if (it == reqId_to_instrument_.end())
     {
-        printf("UNKNOWN tickerId");
+        printf("UNKNOWN ticker id");
         return;
     }
 
-    // MarketTickType tickType = mapTickType(field);
-    // if (tickType == MarketTickType::Unknown) return;
+    MarketTickType tickType = mapTickType(field);
+    if (tickType == MarketTickType::Unknown)
+    {
+        printf("UNKNOWN tick type");
+        return;
+    }
 
     TickEvent event;
 
@@ -161,6 +166,7 @@ void IbkrClient::tickPrice(TickerId tickerId, TickType field,
 void IbkrClient::tickSize(TickerId tickerId, TickType field,
                           Decimal size)
 {
+    // TODO: make cache to get size
 }
 
 // Core event loop
@@ -200,7 +206,7 @@ void IbkrClient::subscribeMarketData(TickerId reqId,
         "",
         false,
         false,
-        {});
+        TagValueListSPtr());
 }
 
 MarketTickType IbkrClient::mapTickType(TickType field)

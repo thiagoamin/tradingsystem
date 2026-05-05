@@ -5,6 +5,7 @@
 #include "EReader.h"
 #include "EClientSocket.h"
 #include "events/tick_event.h"
+#include "Contract.h"
 
 #include <cstring>
 #include <cstdio>
