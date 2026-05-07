@@ -10,6 +10,6 @@ struct QuoteSnapshot
 
     double bid;
     double ask;
-    int64_t bidSize;
-    int64_t askSize;
+    int64_t bidSize_us; // 1 share = 1,000,000 micro shares
+    int64_t askSize_us; // 1 share = 1,000,000 micro shares
 };

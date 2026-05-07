@@ -1,5 +1,6 @@
 #include "IbkrClient.h"
 #include "utils/TimeUtils.h"
+#include "utils/MarketConstants.h"
 #include "OrionTradingContract.h"
 #include "TagValue.h"
 
@@ -141,32 +142,50 @@ void IbkrClient::tickPrice(TickerId tickerId, TickType field,
         return;
     }
 
-    // MarketTickType tickType = mapTickType(field);
-    // if (tickType == MarketTickType::Unknown)
-    // {
-    //     printf("UNKNOWN tick type");
-    //     return;
-    // }
+    auto &quote = quote_cache_[it->second];
+    quote.instrumentId = it->second;
 
-    // TradeTick event;
-
-    // event.instrumentId = it->second;
-    // event.timeStamp_ns = now_ns();
-    // event.tickType = mapTickType(field);
-    // event.price = price;
-    // event.size = 0;
-
-    // TODO: push to MarketDataEngine / queue
-
-    // printf("Tick Price. Ticker Id: %ld, Field: %d, Price: %s, CanAutoExecute: %d, PastLimit: %d, PreOpen: %d\n",
-    //        tickerId, (int)field, Utils::doubleMaxString(price).c_str(), attribs.canAutoExecute, attribs.pastLimit, attribs.preOpen);
+    if (field == BID || field == DELAYED_BID)
+    {
+        quote.bid = price;
+    }
+    else if (field == ASK || field == DELAYED_ASK)
+    {
+        quote.ask = price;
+    }
 }
 
 // IBKR Tick Size Updates
 void IbkrClient::tickSize(TickerId tickerId, TickType field,
                           Decimal size)
 {
-    // TODO: make cache to get size
+    auto it = reqId_to_instrument_.find(tickerId);
+    if (it == reqId_to_instrument_.end())
+    {
+        printf("UNKNOWN ticker id");
+        return;
+    }
+
+    int64_t newSize_us = convertDecimalToMicroShares(size);
+
+    auto &quote = quote_cache_[it->second];
+    quote.instrumentId = it->second;
+
+    if (field == BID_SIZE || field == DELAYED_BID_SIZE)
+    {
+        quote.bidSize_us = newSize_us;
+        quote.timeStamp_ns = now_ns();
+
+        // TODO: check if valid quote then push marketDataEngine otherwise log
+    }
+    else if (field == ASK_SIZE || field == DELAYED_ASK_SIZE)
+    {
+
+        quote.askSize_us = newSize_us;
+        quote.timeStamp_ns = now_ns();
+
+        // TODO: check if valid quote then push marketDataEngine otherwise log
+    }
 }
 
 void IbkrClient::tickByTickAllLast(int reqId,
@@ -190,7 +209,9 @@ void IbkrClient::tickByTickAllLast(int reqId,
     event.instrumentId = it->second;
     event.timeStamp_ns = time;
     event.price = price;
-    event.size = convertDecimalToShares1e4(size);
+    event.size = convertDecimalToMicroShares(size);
+
+    // TODO: feed into my bar builder
 }
 
 // Core event loop
@@ -258,30 +279,9 @@ void IbkrClient::reqTickByTickData(TickerId reqId,
 }
 
 // Converts IBKR Decimal → fixed-point shares (1 share = 10,000 units)
-int64_t IbkrClient::convertDecimalToShares1e4(Decimal size)
+int64_t IbkrClient::convertDecimalToMicroShares(Decimal size)
 {
     // Best course of action to avoid double for better memory and make our code modular
     // Won't be the bottle neck in latency
-    return static_cast<int64_t>(DecimalFunctions::decimalToDouble(size) * 10'000);
+    return static_cast<int64_t>(DecimalFunctions::decimalToDouble(size) * MarketConstants::kMicrosharesPerShare);
 }
-
-// MarketTickType IbkrClient::mapTickType(TickType field)
-// {
-//     switch (field)
-//     {
-//     case BID:
-//         return MarketTickType::Bid;
-//     case ASK:
-//         return MarketTickType::Ask;
-//     case LAST:
-//         return MarketTickType::Last;
-//     case DELAYED_BID:
-//         return MarketTickType::DelayedBid;
-//     case DELAYED_ASK:
-//         return MarketTickType::DelayedAsk;
-//     case DELAYED_LAST:
-//         return MarketTickType::DelayedLast;
-//     default:
-//         return MarketTickType::Unknown;
-//     }
-// }

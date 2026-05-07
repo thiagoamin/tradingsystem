@@ -23,17 +23,6 @@ enum STATE
     ERROR,
 };
 
-// enum class MarketTickType
-// {
-//     Bid,
-//     Ask,
-//     Last,
-//     DelayedBid,
-//     DelayedAsk,
-//     DelayedLast,
-//     Unknown
-// };
-
 class IbkrClient : public DefaultEWrapper
 {
 public:
@@ -76,6 +65,7 @@ private:
     std::unique_ptr<EReader> pReader_;
 
     std::unordered_map<TickerId, int32_t> reqId_to_instrument_; // TODO static?
+    std::unordered_map<TickerId, QuoteSnapshot> quote_cache_;   // TODO static?
     STATE state_;
     bool subscribed_;
     OrderId orderId_;
@@ -85,6 +75,5 @@ private:
     void subscribe();
     void reqQuoteData(TickerId reqId, int32_t instrumentId, const Contract &contract);
     void reqTickByTickData(TickerId reqId, int32_t instrumentId, const Contract &contract);
-    int64_t convertDecimalToShares1e4(Decimal size);
-    // MarketTickType mapTickType(TickType field);
+    int64_t convertDecimalToMicroShares(Decimal size);
 };
