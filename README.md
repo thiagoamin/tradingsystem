@@ -18,6 +18,6 @@ The core architecture is:
 
 - `engine/` - core trading runtime and orchestration.
 - `data/` - data feed wrappers and feature pipeline.
-- `fetchers/` - provider abstraction and data models.
+- `research/fetchers/` - provider abstraction and data models.
 - `research/` - experimental backtesting and signal/utility exploration.
 - `tests/` - unit tests for core modules.

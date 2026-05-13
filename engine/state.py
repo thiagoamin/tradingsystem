@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any, Dict, Optional, Tuple
 
-from fetchers.models import L1Quote, L2OrderBookDelta, L2OrderBookSnapshot, OHLCVBar, TradePrint
+from research.fetchers.models import L1Quote, L2OrderBookDelta, L2OrderBookSnapshot, OHLCVBar, TradePrint
 
 
 class MarketState:

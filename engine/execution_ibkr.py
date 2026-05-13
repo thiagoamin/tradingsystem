@@ -13,7 +13,7 @@ from .portfolio import Portfolio
 from .state import MarketState
 
 if TYPE_CHECKING:
-    from fetchers.providers.ibkr import IBKRLiveFetcher
+    from research.fetchers.providers.ibkr import IBKRLiveFetcher
 
 
 class IBKRExecution(ExecutionEngine):

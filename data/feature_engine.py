@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Dict, Tuple
 
-from fetchers.models import OHLCVBar
+from research.fetchers.models import OHLCVBar
 
 
 class FeatureEngine:

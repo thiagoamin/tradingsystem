@@ -14,9 +14,9 @@ venv/
 .DS_Store
 
 # Credentials
-fetchers_new/thetadata/creds.txt
+research/fetchers/thetadata/creds.txt
 
 # Data
-data_new/thetadata_raw/
+research/raw_data_cache/
 
 *.egg-info/

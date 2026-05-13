@@ -27,8 +27,8 @@ from engine.strategy import Strategy
 from engine.strategies.basic import BuyDipStrategy
 from engine.strategies.utility_allocation import UtilityAllocationStrategy
 from engine.system import TradingSystem
-from fetchers.models import BarInterval
-from fetchers.providers.ibkr import IBKRHistoricalFetcher
+from research.fetchers.models import BarInterval
+from research.fetchers.providers.ibkr import IBKRHistoricalFetcher
 
 
 def _build_strategy(

@@ -4,9 +4,9 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from fetchers.base import ProviderError, RateLimitError
-from fetchers.models import BarInterval
-from fetchers.providers.ibkr import (
+from research.fetchers.base import ProviderError, RateLimitError
+from research.fetchers.models import BarInterval
+from research.fetchers.providers.ibkr import (
     IBKRHistoricalFetcher,
     _IBGatewayError,
     _RawBar,
