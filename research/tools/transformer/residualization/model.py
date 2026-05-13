@@ -5,11 +5,12 @@ from typing import cast
 import numpy as np
 import pandas as pd
 
-from research.tools.modelling.residualization.estimators import ExposureEstimator
-from research.tools.modelling.residualization.spec import FactorSpec
+from research.tools.transformer.base import PanelTransformer
+from research.tools.transformer.residualization.estimators import ExposureEstimator
+from research.tools.transformer.residualization.spec import FactorSpec
 
 
-class FactorResidualizationModel:
+class FactorResidualizationModel(PanelTransformer):
     """Residualize stock returns against per-stock factor assignments."""
 
     def __init__(self, spec: FactorSpec, estimator: ExposureEstimator) -> None:
@@ -32,8 +33,9 @@ class FactorResidualizationModel:
             raise RuntimeError("model has not been fitted yet")
         return self._exposures.copy()
 
-    def fit(self, returns: pd.DataFrame) -> FactorResidualizationModel:
+    def fit(self, data: pd.DataFrame) -> FactorResidualizationModel:
         """Estimate per-stock factor betas from a wide returns panel."""
+        returns = data
         self._validate_columns(returns)
         exposures = pd.DataFrame(np.nan, index=self.spec.stocks, columns=self.spec.all_factors, dtype=float)
         for stock in self.spec.stocks:
@@ -43,8 +45,12 @@ class FactorResidualizationModel:
         self._exposures = exposures
         return self
 
-    def transform(self, returns: pd.DataFrame) -> pd.DataFrame:
-        """Return residual stock returns using betas estimated during fit."""
+    def transform(self, data: pd.DataFrame) -> pd.DataFrame:
+        """
+        Return residual stock returns using betas estimated during fit.
+        REQUIREMENT: must call fit() before transform()
+        """
+        returns = data
         if self._exposures is None:
             raise RuntimeError("must call fit() before transform()")
         self._validate_columns(returns)
@@ -63,10 +69,6 @@ class FactorResidualizationModel:
         out = pd.concat([residual_cols[s] for s in self.spec.stocks], axis=1)
         out.index = returns.index
         return out
-
-    def fit_transform(self, returns: pd.DataFrame) -> pd.DataFrame:
-        """Fit exposures on ``returns`` and immediately residualize the same panel."""
-        return self.fit(returns).transform(returns)
 
     def _validate_columns(self, returns: pd.DataFrame) -> None:
         """Validate that all stocks and factors referenced by the spec are present."""
