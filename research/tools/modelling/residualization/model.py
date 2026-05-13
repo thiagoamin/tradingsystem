@@ -25,7 +25,9 @@ class FactorResidualizationModel:
 
     @property
     def exposures(self) -> pd.DataFrame:
-        """Return a copy of fitted exposures or raise if fit has not been called."""
+        """
+        Return a copy of fitted exposures or raise if fit has not been called.
+        """
         if self._exposures is None:
             raise RuntimeError("model has not been fitted yet")
         return self._exposures.copy()
