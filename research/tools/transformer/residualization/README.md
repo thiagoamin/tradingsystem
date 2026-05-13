@@ -104,8 +104,8 @@ $$
 where:
 
 - $\alpha$ controls total regularization strength
-- $\text{l1\_ratio} = 1$ is lasso-like
-- $\text{l1\_ratio} = 0$ is ridge-like in penalty shape
+- $l1\_ratio = 1$ is lasso-like
+- $l1\_ratio = 0$ is ridge-like in penalty shape
 
 Elastic net is useful when factors are correlated and you still want some sparsity.
 
