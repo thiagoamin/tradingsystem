@@ -31,8 +31,8 @@ from engine.strategy import Strategy
 from engine.strategies.basic import BuyDipStrategy
 from engine.strategies.utility_allocation import UtilityAllocationStrategy
 from engine.system import TradingSystem
-from fetchers.models import BarInterval
-from fetchers.providers.ibkr import IBKRHistoricalFetcher, IBKRLiveFetcher
+from research.fetchers.models import BarInterval
+from research.fetchers.providers.ibkr import IBKRHistoricalFetcher, IBKRLiveFetcher
 
 # IBKR paper account uses port 7497 (TWS) or 4002 (IB Gateway).
 # Live account uses port 7496 (TWS) or 4001 (IB Gateway).

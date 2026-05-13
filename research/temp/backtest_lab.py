@@ -28,26 +28,28 @@ from __future__ import annotations
 import argparse
 import copy
 import math
-import os
 import sys
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
-from allocation.utility_functions import (
+from utility_functions import (
     ExponentialUtility,
     LogUtility,
     MeanVarianceUtility,
     UtilityFunction,
 )
-from fetchers.base import ProviderError
-from fetchers.models import BarInterval, OHLCVBar
-from fetchers.providers.ibkr import IBKRHistoricalFetcher
-from research.signals import DipSignal, MeanReversionSignal, MomentumSignal, Signal
+from research.fetchers.base import ProviderError
+from research.fetchers.models import BarInterval, OHLCVBar
+from research.fetchers.providers.ibkr import IBKRHistoricalFetcher
+from signals import DipSignal, MeanReversionSignal, MomentumSignal, Signal
 
 
 # ---------------------------------------------------------------------------

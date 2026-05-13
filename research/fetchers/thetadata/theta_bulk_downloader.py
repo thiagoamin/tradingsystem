@@ -11,11 +11,11 @@ from typing import Sequence, cast
 import pandas as pd
 import polars as pl
 
-from fetchers_new.thetadata.theta_audit_logger import DownloadAuditEvent, DownloadAuditLogger, QuoteDownloadAuditEvent, TradeQuoteDownloadAuditEvent
-from fetchers_new.thetadata.theta_fetcher import DataFrameLike, ThetaDataFetcher
-from fetchers_new.thetadata.theta_runtime_logger import DownloadRunLogger
-from fetchers_new.thetadata.theta_storage import ThetaDataStorage
-from fetchers_new.thetadata.theta_types import (
+from .theta_audit_logger import DownloadAuditEvent, DownloadAuditLogger, QuoteDownloadAuditEvent, TradeQuoteDownloadAuditEvent
+from .theta_fetcher import DataFrameLike, ThetaDataFetcher
+from .theta_runtime_logger import DownloadRunLogger
+from .theta_storage import DEFAULT_THETADATA_ROOT, ThetaDataStorage
+from .theta_types import (
     DataFrameType,
     DatasetKind,
     DownloadResultLike,
@@ -36,7 +36,7 @@ class ThetaDataBulkDownloader:
 
     _VALID_VENUES = {"nqb", "utp_cta"}
 
-    def __init__(self, data_root: str | Path = "data_new", dataframe_type: DataFrameType = "polars", default_venue: Venue = "utp_cta", max_retries: int = 2, retry_sleep_seconds: float = 2.0) -> None:
+    def __init__(self, data_root: str | Path = DEFAULT_THETADATA_ROOT, dataframe_type: DataFrameType = "polars", default_venue: Venue = "utp_cta", max_retries: int = 2, retry_sleep_seconds: float = 2.0) -> None:
         """Initialize downloader configuration and collaborators."""
         if max_retries < 0:
             raise ValueError("max_retries must be >= 0")

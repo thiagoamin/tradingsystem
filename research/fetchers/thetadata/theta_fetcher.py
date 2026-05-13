@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, time
+from datetime import date, time, timedelta
 from typing import Any, Literal
 
 import pandas as pd
@@ -73,21 +73,13 @@ class ThetaDataFetcher:
         symbol = symbol.upper()
         venue_to_use = self._validate_venue(venue or self.default_venue)
         date_args = self._build_date_args(date_=date_, start_date=start_date, end_date=end_date)
-
-        try:
-            result = self.client.stock_history_trade(
-                symbol=symbol,
-                start_time=start_time,
-                end_time=end_time,
-                venue=venue_to_use,
-                **date_args,
-            )
-        except Exception as exc:  # noqa: BLE001
-            if exc.__class__.__name__ == "NoDataFoundError":
-                return self._empty_dataframe()
-            raise
-
-        return self._validate_result(result)
+        return self._fetch_trade_range(
+            symbol=symbol,
+            venue=venue_to_use,
+            start_time=start_time,
+            end_time=end_time,
+            date_args=date_args,
+        )
 
     def fetch_stock_trade_quotes(
         self,
@@ -123,22 +115,14 @@ class ThetaDataFetcher:
         symbol = symbol.upper()
         venue_to_use = self._validate_venue(venue or self.default_venue)
         date_args = self._build_date_args(date_=date_, start_date=start_date, end_date=end_date)
-
-        try:
-            result = self.client.stock_history_trade_quote(
-                symbol=symbol,
-                start_time=start_time,
-                end_time=end_time,
-                exclusive=exclusive,
-                venue=venue_to_use,
-                **date_args,
-            )
-        except Exception as exc:  # noqa: BLE001
-            if exc.__class__.__name__ == "NoDataFoundError":
-                return self._empty_dataframe()
-            raise
-
-        return self._validate_result(result)
+        return self._fetch_trade_quote_range(
+            symbol=symbol,
+            venue=venue_to_use,
+            start_time=start_time,
+            end_time=end_time,
+            exclusive=exclusive,
+            date_args=date_args,
+        )
 
     def fetch_stock_quotes(
         self,
@@ -163,22 +147,14 @@ class ThetaDataFetcher:
         venue_to_use = self._validate_venue(venue or self.default_venue)
         date_args = self._build_date_args(date_=date_, start_date=start_date, end_date=end_date)
         self._validate_quote_interval_window(interval=interval_to_use, date_=date_, start_date=start_date, end_date=end_date)
-
-        try:
-            result = self.client.stock_history_quote(
-                symbol=symbol,
-                interval=interval_to_use,
-                start_time=start_time,
-                end_time=end_time,
-                venue=venue_to_use,
-                **date_args,
-            )
-        except Exception as exc:  # noqa: BLE001
-            if exc.__class__.__name__ == "NoDataFoundError":
-                return self._empty_dataframe()
-            raise
-
-        return self._validate_result(result)
+        return self._fetch_quote_range(
+            symbol=symbol,
+            interval=interval_to_use,
+            venue=venue_to_use,
+            start_time=start_time,
+            end_time=end_time,
+            date_args=date_args,
+        )
 
     def _validate_venue(self, venue: str) -> str:
         """Validate venue against supported ThetaData stock-trade venues."""
@@ -257,3 +233,116 @@ class ThetaDataFetcher:
         if self.dataframe_type == "polars":
             return pl.DataFrame()
         return pd.DataFrame()
+
+    def _fetch_trade_range(
+        self,
+        symbol: str,
+        venue: str,
+        start_time: time,
+        end_time: time,
+        date_args: dict[str, date],
+    ) -> DataFrameLike:
+        return self._fetch_chunked(
+            date_args=date_args,
+            fetch_chunk=lambda chunk: self.client.stock_history_trade(
+                symbol=symbol,
+                start_time=start_time,
+                end_time=end_time,
+                venue=venue,
+                **chunk,
+            ),
+        )
+
+    def _fetch_trade_quote_range(
+        self,
+        symbol: str,
+        venue: str,
+        start_time: time,
+        end_time: time,
+        exclusive: bool,
+        date_args: dict[str, date],
+    ) -> DataFrameLike:
+        return self._fetch_chunked(
+            date_args=date_args,
+            fetch_chunk=lambda chunk: self.client.stock_history_trade_quote(
+                symbol=symbol,
+                start_time=start_time,
+                end_time=end_time,
+                exclusive=exclusive,
+                venue=venue,
+                **chunk,
+            ),
+        )
+
+    def _fetch_quote_range(
+        self,
+        symbol: str,
+        interval: str,
+        venue: str,
+        start_time: time,
+        end_time: time,
+        date_args: dict[str, date],
+    ) -> DataFrameLike:
+        return self._fetch_chunked(
+            date_args=date_args,
+            fetch_chunk=lambda chunk: self.client.stock_history_quote(
+                symbol=symbol,
+                interval=interval,
+                start_time=start_time,
+                end_time=end_time,
+                venue=venue,
+                **chunk,
+            ),
+        )
+
+    def _fetch_chunked(
+        self,
+        date_args: dict[str, date],
+        fetch_chunk: Any,
+    ) -> DataFrameLike:
+        if "date" in date_args:
+            return self._execute_request(lambda: fetch_chunk(date_args))
+
+        results = [
+            self._execute_request(lambda chunk=chunk: fetch_chunk(chunk))
+            for chunk in self._iter_month_chunks(
+                start_date=date_args["start_date"],
+                end_date=date_args["end_date"],
+            )
+        ]
+        return self._concat_results(results)
+
+    def _execute_request(self, request: Any) -> DataFrameLike:
+        try:
+            return self._validate_result(request())
+        except Exception as exc:  # noqa: BLE001
+            if exc.__class__.__name__ == "NoDataFoundError":
+                return self._empty_dataframe()
+            raise
+
+    def _iter_month_chunks(self, start_date: date, end_date: date) -> list[dict[str, date]]:
+        chunks: list[dict[str, date]] = []
+        chunk_start = start_date
+        while chunk_start <= end_date:
+            month_end = self._month_end(chunk_start)
+            chunk_end = month_end if month_end <= end_date else end_date
+            chunks.append({"start_date": chunk_start, "end_date": chunk_end})
+            chunk_start = chunk_end + timedelta(days=1)
+        return chunks
+
+    def _month_end(self, value: date) -> date:
+        next_month = value.replace(day=28) + timedelta(days=4)
+        return next_month.replace(day=1) - timedelta(days=1)
+
+    def _concat_results(self, results: list[DataFrameLike]) -> DataFrameLike:
+        non_empty = [result for result in results if self._row_count(result) > 0]
+        if not non_empty:
+            return self._empty_dataframe()
+        if self.dataframe_type == "polars":
+            return pl.concat([result for result in non_empty if isinstance(result, pl.DataFrame)], how="vertical")
+        return pd.concat([result for result in non_empty if isinstance(result, pd.DataFrame)], ignore_index=True)
+
+    def _row_count(self, df: DataFrameLike) -> int:
+        if isinstance(df, pl.DataFrame):
+            return df.height
+        return len(df)

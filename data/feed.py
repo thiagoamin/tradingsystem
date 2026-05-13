@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import Iterable, List
-from fetchers.base import Fetcher
-from fetchers.models import BarInterval, L1Quote, OHLCVBar
+from research.fetchers.base import Fetcher
+from research.fetchers.models import BarInterval, L1Quote, OHLCVBar
 
 from .feature_engine import FeatureEngine
 

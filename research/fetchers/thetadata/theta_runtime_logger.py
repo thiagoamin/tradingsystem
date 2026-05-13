@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from fetchers_new.thetadata.theta_types import DatasetKind, DownloadResultLike, TradeDownloadJob
+from .theta_types import DatasetKind, DownloadResultLike, TradeDownloadJob
 
 
 class DownloadRunLogger:

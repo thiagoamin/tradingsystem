@@ -14,14 +14,18 @@ To add a new signal: subclass Signal and implement estimate().
 from __future__ import annotations
 
 import math
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from abc import ABC, abstractmethod
 from typing import List, Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from backtest_lab import SimplePortfolio
+    from research.temp.backtest_lab import SimplePortfolio
 
 
 # ---------------------------------------------------------------------------

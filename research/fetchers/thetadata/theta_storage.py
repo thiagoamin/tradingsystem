@@ -8,14 +8,16 @@ from pathlib import Path
 import pandas as pd
 import polars as pl
 
-from fetchers_new.thetadata.theta_fetcher import DataFrameLike
-from fetchers_new.thetadata.theta_types import DatasetKind
+from .theta_fetcher import DataFrameLike
+from .theta_types import DatasetKind
+
+DEFAULT_THETADATA_ROOT = Path("research") / "raw_data_cache" / "thetadata"
 
 
 class ThetaDataStorage:
     """Map symbol/date records to parquet paths and write parquet files."""
 
-    def __init__(self, data_root: str | Path = "data_new") -> None:
+    def __init__(self, data_root: str | Path = DEFAULT_THETADATA_ROOT) -> None:
         """Initialize storage rooted at ``data_root``."""
         self.data_root = Path(data_root)
 
