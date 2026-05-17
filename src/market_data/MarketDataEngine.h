@@ -1,6 +1,6 @@
 #pragma once
 
-#include "events/tradeTickEvent.h"
+#include "events/TradeTick.h"
 #include "BarBuilder.h"
 
 class MarketDataEngine

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdint>
-#include "events/tradeTickEvent.h"
+#include "events/TradeTick.h"
 
 class BarBuilder
 {

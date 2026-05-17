@@ -4,8 +4,8 @@
 #include "EReaderOSSignal.h"
 #include "EReader.h"
 #include "EClientSocket.h"
-#include "events/tradeTickEvent.h"
-#include "events/quoteSnapshotEvent.h"
+#include "events/TradeTick.h"
+#include "events/QuoteSnapshot.h"
 #include "Contract.h"
 #include "Decimal.h"
 
@@ -58,14 +58,15 @@ public:
                            const TickAttribLast &tickAttribLast,
                            const std::string &exchange,
                            const std::string &specialConditions) override;
+    void connectionClosed() override;
 
 private:
     EReaderOSSignal osSignal_;
     std::unique_ptr<EClientSocket> pClientSocket_;
     std::unique_ptr<EReader> pReader_;
 
-    std::unordered_map<TickerId, int32_t> reqId_to_instrument_; // TODO static?
-    std::unordered_map<TickerId, QuoteSnapshot> quote_cache_;   // TODO static?
+    std::unordered_map<TickerId, int32_t> reqIdToInstrumentId_;
+    std::unordered_map<int32_t, QuoteSnapshot> quote_cache_;
     STATE state_;
     bool subscribed_;
     OrderId orderId_;

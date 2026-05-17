@@ -22,6 +22,8 @@ IbkrClient::~IbkrClient()
 
 bool IbkrClient::connect(const char *host, int port, int clientId)
 {
+    state_ = CONNECT;
+
     // TODO: Connection retry
     // 1. Log attempt to connect
     printf("Connecting to %s:%d clientId:%d\n", !(host && *host) ? "127.0.0.1" : host, port, clientId);
@@ -64,13 +66,15 @@ void IbkrClient::run()
     switch (state_)
     {
     case CONNECT:
+        printf("Waiting for IBKR session initialization...\n");
         break;
     case RUN:
-        processMessages();
         break;
     case ERROR:
         break;
     }
+
+    processMessages();
 }
 
 void IbkrClient::connectAck()
@@ -85,7 +89,6 @@ void IbkrClient::nextValidId(OrderId orderId)
     orderId_ = orderId;
     std::cout << "Next valid order id: " << orderId_ << "\n";
 
-    // TODO: redo this when disconnect
     if (!subscribed_)
     {
         subscribe();
@@ -133,10 +136,9 @@ void IbkrClient::tickPrice(TickerId tickerId, TickType field,
                            double price,
                            const TickAttrib &attribs)
 {
-    // map tickerId to reqId
-    // TODO rename it
-    auto it = reqId_to_instrument_.find(tickerId);
-    if (it == reqId_to_instrument_.end())
+    // map tickerId to instrumentid
+    auto it = reqIdToInstrumentId_.find(tickerId);
+    if (it == reqIdToInstrumentId_.end())
     {
         printf("UNKNOWN ticker id");
         return;
@@ -159,8 +161,8 @@ void IbkrClient::tickPrice(TickerId tickerId, TickType field,
 void IbkrClient::tickSize(TickerId tickerId, TickType field,
                           Decimal size)
 {
-    auto it = reqId_to_instrument_.find(tickerId);
-    if (it == reqId_to_instrument_.end())
+    auto it = reqIdToInstrumentId_.find(tickerId);
+    if (it == reqIdToInstrumentId_.end())
     {
         printf("UNKNOWN ticker id");
         return;
@@ -197,8 +199,8 @@ void IbkrClient::tickByTickAllLast(int reqId,
                                    const std::string &exchange,
                                    const std::string &specialConditions)
 {
-    auto it = reqId_to_instrument_.find(reqId);
-    if (it == reqId_to_instrument_.end())
+    auto it = reqIdToInstrumentId_.find(reqId);
+    if (it == reqIdToInstrumentId_.end())
     {
         printf("UNKNOWN ticker id");
         return;
@@ -212,6 +214,13 @@ void IbkrClient::tickByTickAllLast(int reqId,
     event.size = convertDecimalToMicroShares(size);
 
     // TODO: feed into my bar builder
+}
+
+void IbkrClient::connectionClosed()
+{
+    std::cout << "Connection closed\n";
+
+    subscribed_ = false;
 }
 
 // Core event loop
@@ -246,14 +255,14 @@ void IbkrClient::subscribe()
     reqTickByTickData(20007, 7, OrionTradingContract::GOOGL());
     reqTickByTickData(20008, 8, OrionTradingContract::AMZN());
 
-    // TODO print if sub is successful
+    std::cout << "Requested market data for Project Orion instruments\n";
 }
 
 void IbkrClient::reqQuoteData(TickerId reqId,
                               int32_t instrumentId,
                               const Contract &contract)
 {
-    reqId_to_instrument_[reqId] = instrumentId;
+    reqIdToInstrumentId_[reqId] = instrumentId;
 
     pClientSocket_->reqMktData(
         reqId,
@@ -268,7 +277,7 @@ void IbkrClient::reqTickByTickData(TickerId reqId,
                                    int32_t instrumentId,
                                    const Contract &contract)
 {
-    reqId_to_instrument_[reqId] = instrumentId;
+    reqIdToInstrumentId_[reqId] = instrumentId;
 
     pClientSocket_->reqTickByTickData(
         reqId,
