@@ -1,4 +1,5 @@
 #include "ibkr_wrapper/IbkrClient.h"
+#include "market_data/MarketDataEngine.h"
 
 #include <thread>
 
@@ -7,7 +8,8 @@ const unsigned SLEEP_TIME = 3;
 
 int main()
 {
-    IbkrClient client;
+    MarketDataEngine marketDataEngine;
+    IbkrClient client(marketDataEngine);
     const char *host = "127.0.0.1";
     int port = 7497;
     int clientId = 0;

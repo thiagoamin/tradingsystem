@@ -7,11 +7,12 @@
 #include <iostream>
 
 // 2s to wait for signal before timeout
-IbkrClient::IbkrClient() : osSignal_(2000),
-                           pClientSocket_(std::make_unique<EClientSocket>(this, &osSignal_)),
-                           state_(CONNECT),
-                           orderId_(0),
-                           subscribed_(false)
+IbkrClient::IbkrClient(MarketDataEngine &engine) : marketDataEngine_(engine),
+                                                   osSignal_(2000),
+                                                   pClientSocket_(std::make_unique<EClientSocket>(this, &osSignal_)),
+                                                   state_(CONNECT),
+                                                   orderId_(0),
+                                                   subscribed_(false)
 {
 }
 
@@ -213,7 +214,7 @@ void IbkrClient::tickByTickAllLast(int reqId,
     event.price = price;
     event.size = convertDecimalToMicroShares(size);
 
-    // TODO: feed into my bar builder
+    marketDataEngine_.onTradeTick(event);
 }
 
 void IbkrClient::connectionClosed()
@@ -237,29 +238,29 @@ void IbkrClient::subscribe()
 {
     pClientSocket_->reqMarketDataType(4);
 
-    reqQuoteData(1001, 1, OrionTradingContract::SPY());
-    reqQuoteData(1002, 2, OrionTradingContract::QQQ());
-    reqQuoteData(1003, 3, OrionTradingContract::TSLA());
-    reqQuoteData(1004, 4, OrionTradingContract::AAPL());
-    reqQuoteData(1005, 5, OrionTradingContract::MSFT());
-    reqQuoteData(1006, 6, OrionTradingContract::NVDA());
-    reqQuoteData(1007, 7, OrionTradingContract::GOOGL());
-    reqQuoteData(1008, 8, OrionTradingContract::AMZN());
+    reqQuoteData(1001, InstrumentId::SPY, OrionTradingContract::SPY());
+    reqQuoteData(1002, InstrumentId::QQQ, OrionTradingContract::QQQ());
+    reqQuoteData(1003, InstrumentId::TSLA, OrionTradingContract::TSLA());
+    reqQuoteData(1004, InstrumentId::AAPL, OrionTradingContract::AAPL());
+    reqQuoteData(1005, InstrumentId::MSFT, OrionTradingContract::MSFT());
+    reqQuoteData(1006, InstrumentId::NVDA, OrionTradingContract::NVDA());
+    reqQuoteData(1007, InstrumentId::GOOGL, OrionTradingContract::GOOGL());
+    reqQuoteData(1008, InstrumentId::AMZN, OrionTradingContract::AMZN());
 
-    reqTickByTickData(20001, 1, OrionTradingContract::SPY());
-    reqTickByTickData(20002, 2, OrionTradingContract::QQQ());
-    reqTickByTickData(20003, 3, OrionTradingContract::TSLA());
-    reqTickByTickData(20004, 4, OrionTradingContract::AAPL());
-    reqTickByTickData(20005, 5, OrionTradingContract::MSFT());
-    reqTickByTickData(20006, 6, OrionTradingContract::NVDA());
-    reqTickByTickData(20007, 7, OrionTradingContract::GOOGL());
-    reqTickByTickData(20008, 8, OrionTradingContract::AMZN());
+    reqTickByTickData(20001, InstrumentId::SPY, OrionTradingContract::SPY());
+    reqTickByTickData(20002, InstrumentId::QQQ, OrionTradingContract::QQQ());
+    reqTickByTickData(20003, InstrumentId::TSLA, OrionTradingContract::TSLA());
+    reqTickByTickData(20004, InstrumentId::AAPL, OrionTradingContract::AAPL());
+    reqTickByTickData(20005, InstrumentId::MSFT, OrionTradingContract::MSFT());
+    reqTickByTickData(20006, InstrumentId::NVDA, OrionTradingContract::NVDA());
+    reqTickByTickData(20007, InstrumentId::GOOGL, OrionTradingContract::GOOGL());
+    reqTickByTickData(20008, InstrumentId::AMZN, OrionTradingContract::AMZN());
 
     std::cout << "Requested market data for Project Orion instruments\n";
 }
 
 void IbkrClient::reqQuoteData(TickerId reqId,
-                              int32_t instrumentId,
+                              InstrumentId instrumentId,
                               const Contract &contract)
 {
     reqIdToInstrumentId_[reqId] = instrumentId;
@@ -274,7 +275,7 @@ void IbkrClient::reqQuoteData(TickerId reqId,
 }
 
 void IbkrClient::reqTickByTickData(TickerId reqId,
-                                   int32_t instrumentId,
+                                   InstrumentId instrumentId,
                                    const Contract &contract)
 {
     reqIdToInstrumentId_[reqId] = instrumentId;

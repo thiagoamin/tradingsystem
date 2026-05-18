@@ -6,6 +6,8 @@
 #include "EClientSocket.h"
 #include "events/TradeTick.h"
 #include "events/QuoteSnapshot.h"
+#include "market_data/MarketDataEngine.h"
+#include "core/InstrumentId.h"
 #include "Contract.h"
 #include "Decimal.h"
 
@@ -26,7 +28,7 @@ enum STATE
 class IbkrClient : public DefaultEWrapper
 {
 public:
-    IbkrClient();
+    IbkrClient(MarketDataEngine &engine);
     ~IbkrClient();
 
     // public functions
@@ -61,12 +63,14 @@ public:
     void connectionClosed() override;
 
 private:
+    MarketDataEngine &marketDataEngine_;
+
     EReaderOSSignal osSignal_;
     std::unique_ptr<EClientSocket> pClientSocket_;
     std::unique_ptr<EReader> pReader_;
 
-    std::unordered_map<TickerId, int32_t> reqIdToInstrumentId_;
-    std::unordered_map<int32_t, QuoteSnapshot> quote_cache_;
+    std::unordered_map<TickerId, InstrumentId> reqIdToInstrumentId_;
+    std::unordered_map<InstrumentId, QuoteSnapshot> quote_cache_;
     STATE state_;
     bool subscribed_;
     OrderId orderId_;
@@ -74,7 +78,7 @@ private:
     // private functions
     void processMessages();
     void subscribe();
-    void reqQuoteData(TickerId reqId, int32_t instrumentId, const Contract &contract);
-    void reqTickByTickData(TickerId reqId, int32_t instrumentId, const Contract &contract);
+    void reqQuoteData(TickerId reqId, InstrumentId instrumentId, const Contract &contract);
+    void reqTickByTickData(TickerId reqId, InstrumentId instrumentId, const Contract &contract);
     int64_t convertDecimalToMicroShares(Decimal size);
 };

@@ -1,15 +1,19 @@
 #pragma once
 
 #include "events/TradeTick.h"
-#include "BarBuilder.h"
+#include "market_data/BarBuilder.h"
+#include "InstrumentMarketState.h"
+#include "core/InstrumentId.h"
+
+#include <unordered_map>
 
 class MarketDataEngine
 {
 public:
-    MarketDataEngine();
-    ~MarketDataEngine();
+    MarketDataEngine() = default;
+    ~MarketDataEngine() = default;
+    void onTradeTick(const TradeTick &tick);
 
 private:
-    void onTick(const TradeTick &tick);
-    BarBuilder barBuilder_;
+    std::unordered_map<InstrumentId, InstrumentMarketState> instrumentStates_;
 };

@@ -1,11 +1,12 @@
 #pragma once
 
 #include <cstdint>
+#include <core/InstrumentId.h>
 
 struct FeatureBar
 {
     /* --- Metadata --- */
-    int32_t instrumentId;
+    InstrumentId instrumentId;
 
     int64_t startTimeStamp_ns;
     int64_t endTimeStamp_ns;

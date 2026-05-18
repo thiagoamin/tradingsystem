@@ -6,7 +6,7 @@
 class BarBuilder
 {
 public:
-    BarBuilder(int64_t interval_ns);
+    BarBuilder();
     ~BarBuilder();
 
     void onTick(TradeTick tick);
