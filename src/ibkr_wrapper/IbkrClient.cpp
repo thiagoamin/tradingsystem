@@ -177,7 +177,7 @@ void IbkrClient::tickSize(TickerId tickerId, TickType field,
     if (field == BID_SIZE || field == DELAYED_BID_SIZE)
     {
         quote.bidSize_us = newSize_us;
-        quote.timeStamp_ns = now_ns();
+        quote.timeStamp_ns = TimeUtils::steady_time_ns();
 
         // TODO: check if valid quote then push marketDataEngine otherwise log
     }
@@ -185,7 +185,7 @@ void IbkrClient::tickSize(TickerId tickerId, TickType field,
     {
 
         quote.askSize_us = newSize_us;
-        quote.timeStamp_ns = now_ns();
+        quote.timeStamp_ns = TimeUtils::steady_time_ns();
 
         // TODO: check if valid quote then push marketDataEngine otherwise log
     }
@@ -210,7 +210,9 @@ void IbkrClient::tickByTickAllLast(int reqId,
     TradeTick event;
 
     event.instrumentId = it->second;
-    event.timeStamp_ns = time;
+    event.exchangeTimestamp_ns = static_cast<int64_t>(time) * TimeUtils::kNanosecondsPerSecond;
+    event.recvSteadyTimestamp_ns = TimeUtils::steady_time_ns();
+    event.recvWallTimestamp_ns = TimeUtils::wall_time_ns();
     event.price = price;
     event.size = convertDecimalToMicroShares(size);
 

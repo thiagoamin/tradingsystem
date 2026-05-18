@@ -1,5 +1,6 @@
 #pragma once
 #include "events/TradeTick.h"
+#include "events/FeatureBar.h"
 #include <vector>
 
 class TradeBucket
@@ -11,4 +12,5 @@ public:
 
 private:
     std::vector<TradeTick> ticks_;
+    FeatureBar bucketFeatures_;
 };

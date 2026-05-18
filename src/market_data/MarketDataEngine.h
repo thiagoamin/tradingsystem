@@ -10,8 +10,6 @@
 class MarketDataEngine
 {
 public:
-    MarketDataEngine() = default;
-    ~MarketDataEngine() = default;
     void onTradeTick(const TradeTick &tick);
 
 private:

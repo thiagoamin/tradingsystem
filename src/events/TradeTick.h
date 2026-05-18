@@ -9,7 +9,9 @@ using TickerId = long;
 struct TradeTick
 {
     InstrumentId instrumentId;
-    int64_t timeStamp_ns; // absolute time in nanoseconds
+    int64_t exchangeTimestamp_ns; // IBKR time_t * 1e9, coarse
+    int64_t recvSteadyTimestamp_ns;
+    int64_t recvWallTimestamp_ns;
     double price;
     int64_t size;
 
