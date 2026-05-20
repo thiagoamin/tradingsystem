@@ -1,11 +1,7 @@
 #include "BarBuilder.h"
 
-BarBuilder::BarBuilder() {}
+BarBuilder::BarBuilder(int64_t &barId) : interval_ns_(barId) {}
 
-BarBuilder::~BarBuilder()
-{
-}
-
-void BarBuilder::onTick(TradeTick tick)
+void BarBuilder::build()
 {
 }

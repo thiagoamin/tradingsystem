@@ -7,33 +7,49 @@ struct FeatureBar
 {
     /* --- Metadata --- */
     InstrumentId instrumentId;
+    int64_t barId;
 
     int64_t startTimeStamp_ns;
     int64_t endTimeStamp_ns;
     int64_t interval_ns;
 
-    /* --- Basic OHLC --- */
+    /* --- Quote Features --- */
+    double midpointClose;
+    double spreadClose;
+    double spreadBpts;
+    double quoteImbalance;
+    double microPrice;
+    double microPriceDev;
+
+    /* --- Trade Derived --- */
+    int32_t tradeCount;
+    int64_t unsignedVolume_us;
+    int64_t signedVolume_us;
+    double dollarVolume_us;
+
+    double vwap;
+    double svi; // signed volume imbalance
+    double vwapGap;
+
+    /* --- OHLC/debug --- */
     double open;
-    double high; // q4
+    double high;
     double low;
     double close;
 
-    int64_t volume;
-    int32_t trade_count;
+    // ---------- Optional price stats ----------
+    double priceMean;
+    double priceStdev;
 
-    /* --- Statistical Features --- */
-    double price_change; // close - open
+    double priceQ1;
+    double priceQ2;
+    double priceQ3;
 
-    // Price Distribution
-    double price_mean;  // Average price
-    double price_stdev; // Price standard deviation during the 15s
+    // ---------- Optional size stats ----------
+    double sizeMean_us;
+    double sizeStdev_us;
 
-    // Size/Volume Distribution
-    double size_mean;  // Average trade size
-    double size_stdev; // Size standard deviation
-
-    // Distribution Quantiles
-    double price_q1; // 25th percentile of price
-    double price_q2; // 50th percentile (Median)
-    double price_q3; // 75th percentile
+    double sizeQ1_us;
+    double sizeQ2_us;
+    double sizeQ3_us;
 };

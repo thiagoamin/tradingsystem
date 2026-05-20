@@ -14,5 +14,9 @@ struct QuoteSnapshot
     int64_t bidSize_us; // 1 share = 1,000,000 micro shares
     int64_t askSize_us; // 1 share = 1,000,000 micro shares
 
-    // TODO: do I need other features
+    // TODO: features needed later?
+    // bidConditions
+    // askConditions
+    // bidExchanges
+    // askExchanges
 };

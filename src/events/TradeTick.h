@@ -13,7 +13,7 @@ struct TradeTick
     int64_t recvSteadyTimestamp_ns;
     int64_t recvWallTimestamp_ns;
     double price;
-    int64_t size;
+    int64_t size_us;
 
     // TODO: do I need other features
 };

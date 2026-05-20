@@ -137,6 +137,7 @@ void IbkrClient::tickPrice(TickerId tickerId, TickType field,
                            double price,
                            const TickAttrib &attribs)
 {
+    // 1. Get instrument id
     // map tickerId to instrumentid
     auto it = reqIdToInstrumentId_.find(tickerId);
     if (it == reqIdToInstrumentId_.end())
@@ -148,6 +149,7 @@ void IbkrClient::tickPrice(TickerId tickerId, TickType field,
     auto &quote = quote_cache_[it->second];
     quote.instrumentId = it->second;
 
+    // 2. Check if bid or ask
     if (field == BID || field == DELAYED_BID)
     {
         quote.bid = price;
@@ -162,6 +164,7 @@ void IbkrClient::tickPrice(TickerId tickerId, TickType field,
 void IbkrClient::tickSize(TickerId tickerId, TickType field,
                           Decimal size)
 {
+    // 1. Get instrument id
     auto it = reqIdToInstrumentId_.find(tickerId);
     if (it == reqIdToInstrumentId_.end())
     {
@@ -174,20 +177,24 @@ void IbkrClient::tickSize(TickerId tickerId, TickType field,
     auto &quote = quote_cache_[it->second];
     quote.instrumentId = it->second;
 
+    // 2. Check if bid or ask
     if (field == BID_SIZE || field == DELAYED_BID_SIZE)
     {
         quote.bidSize_us = newSize_us;
         quote.timeStamp_ns = TimeUtils::steady_time_ns();
-
-        // TODO: check if valid quote then push marketDataEngine otherwise log
     }
     else if (field == ASK_SIZE || field == DELAYED_ASK_SIZE)
     {
 
         quote.askSize_us = newSize_us;
         quote.timeStamp_ns = TimeUtils::steady_time_ns();
+    }
 
-        // TODO: check if valid quote then push marketDataEngine otherwise log
+    // 3. Send quote to market data engine
+    if (quote.bid > 0 && quote.ask > 0 &&
+        quote.bidSize_us > 0 && quote.askSize_us > 0)
+    {
+        marketDataEngine_.onQuoteSample(quote);
     }
 }
 
@@ -214,7 +221,7 @@ void IbkrClient::tickByTickAllLast(int reqId,
     event.recvSteadyTimestamp_ns = TimeUtils::steady_time_ns();
     event.recvWallTimestamp_ns = TimeUtils::wall_time_ns();
     event.price = price;
-    event.size = convertDecimalToMicroShares(size);
+    event.size_us = convertDecimalToMicroShares(size);
 
     marketDataEngine_.onTradeTick(event);
 }
