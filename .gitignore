@@ -10,6 +10,9 @@ __pycache__/
 .venv
 venv/
 
+# Build
+/build
+
 # OS
 .DS_Store
 
