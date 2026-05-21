@@ -135,9 +135,17 @@ def build_returns(
         prices = build_prices(symbol)
         if config.return_type == "log":
             ratio = cast(pd.Series, prices / prices.shift(1))
-            returns = pd.Series(np.log(ratio.to_numpy(dtype=float)), index=prices.index, name=symbol)
+            ratio_np = ratio.to_numpy(dtype=float)
+            with np.errstate(divide="ignore", invalid="ignore"):
+                log_returns = np.log(ratio_np)
+            invalid = (~np.isfinite(ratio_np)) | (ratio_np <= 0.0) | (~np.isfinite(log_returns))
+            log_returns[invalid] = np.nan
+            returns = pd.Series(log_returns, index=prices.index, name=symbol)
         elif config.return_type == "simple":
-            returns = cast(pd.Series, prices / prices.shift(1) - 1.0)
+            simple = cast(pd.Series, prices / prices.shift(1) - 1.0)
+            simple_np = simple.to_numpy(dtype=float)
+            simple_np[~np.isfinite(simple_np)] = np.nan
+            returns = pd.Series(simple_np, index=simple.index, name=symbol)
         else:
             raise NotImplementedError(f"return_type '{config.return_type}' not implemented")
         returns.name = symbol

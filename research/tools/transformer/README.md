@@ -8,6 +8,8 @@ $$
 
 A transformer does not forecast the future. It changes the representation of the current or historical data.
 
+Its output can be used directly by a strategy or passed into a predictor first.
+
 Examples:
 
 - returns $\rightarrow$ residual returns
