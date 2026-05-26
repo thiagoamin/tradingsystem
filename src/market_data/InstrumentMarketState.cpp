@@ -8,6 +8,7 @@ InstrumentMarketState::InstrumentMarketState(InstrumentId id) : instrumentId_(id
 
 void InstrumentMarketState::onTick(const TradeTick &tick)
 {
+    // change this bc this is not gonna push/ pull 15s
     int64_t currId = tick.exchangeTimestamp_ns / FifteenSec_ns;
 
     if (bucketId_15s_ == -1)

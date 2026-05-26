@@ -27,8 +27,8 @@ struct FeatureBar
     int64_t signedVolume_us;
     double dollarVolume_us;
 
-    double vwap;
-    double svi; // signed volume imbalance
+    double vwap; // volume weighted average price
+    double svi;  // signed volume imbalance
     double vwapGap;
 
     /* --- OHLC/debug --- */
