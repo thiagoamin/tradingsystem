@@ -37,7 +37,7 @@ bool IbkrClient::connect(const char *host, int port, int clientId)
         printf("Successfully connected to %s:%d clientId:%d serverVersion: %d\n",
                pClientSocket_->host().c_str(), pClientSocket_->port(), clientId, pClientSocket_->EClient::serverVersion());
 
-        pReader_ = std::make_unique<EReader>(pClientSocket_.get(), &osSignal_);
+        pReader_ = std::make_unique<EReader>(pClientSocket_.get(), &osSignal_); // Construct object now
         pReader_->start();
     }
     else
