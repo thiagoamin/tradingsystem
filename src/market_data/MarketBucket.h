@@ -1,51 +1,106 @@
 #pragma once
+
+/**
+ * @file    MarketBucket.h
+ * @author  Phi Lam (lamyenphi14@gmail.com)
+ * @brief   Raw statistics accumulator for trade prints and quote frames.
+ *
+ * This module buffers discrete transactional ticks and cross-sectional quotes
+ * over an active epoch window. It maintains running aggregates and raw vectors
+ * to calculate robust microstructural statistics (e.g., VWAP, standard deviations,
+ * and percentiles) when constructing a finalized FeatureBar.
+ *
+ * @version 0.1
+ * @date    2026-05-27
+ *
+ * @copyright Copyright (c) 2026
+ *
+ */
+
 #include "events/TradeTick.h"
 #include "events/QuoteSnapshot.h"
 #include "events/FeatureBar.h"
 #include "core/InstrumentId.h"
 #include <vector>
 
+/**
+ * @brief Statistical bucket tracking raw data slices.
+ *
+ * @details Accumulates streaming tick and quote parameters dynamically, exporting
+ * a structured feature state profile on 15s interval boundary roll-overs.
+ */
 class MarketBucket
 {
 public:
+    /**
+     * @brief Constructs an empty market data bucket and reserves sample storage.
+     */
     MarketBucket();
+
+    /**
+     * @brief Aggregates an execution tick and caches the most recent top-of-book context.
+     *
+     * @param tick   Inbound trade execution print.
+     * @param quote  Most recent quote snapshot.
+     */
     void add(const TradeTick &tick, const QuoteSnapshot &quote);
+
+    /**
+     * @brief Processes accumulated data in market bucket to compile a finalized FeatureBar.
+     *
+     * @param id        Current instrument's ID.
+     * @param bucketId  Bucket ID for the 15s window.
+     * @return          Fully populated statistical 15s feature bar profile.
+     */
     FeatureBar build(InstrumentId id, int64_t bucketId) const;
+
+    /**
+     * @brief Flushes accumulated metrics and resets scalars while preserving vector allocations.
+     */
     void clear();
-    bool isEmpty();
+
+    /**
+     * @brief Checks if the bucket contains 0 trade samples.
+     *
+     * @return true  If bucket contains any trade samples.
+     * @return false If bucket has 0 trades.
+     */
+    bool isEmpty() const;
 
 private:
-    int64_t startTimeStamp_ns;
-    int64_t endTimeStamp_ns;
+    /* -------------------------- Bucket Time Interval -------------------------- */
+    int64_t startTimeStamp_ns_ = 0;
+    int64_t endTimeStamp_ns_ = 0;
 
-    int64_t tradeCount;
-    double priceTotal;
-    int64_t unsignedVolume_us;
-    int64_t signedVolume_us;
-    double dollarVolume_us;
+    /* ---------------------------- Trade Aggregates ---------------------------- */
+    int64_t tradeCount_ = 0;
+    double priceTotal_ = 0.0;
+    int64_t unsignedVolume_us_ = 0;
+    int64_t signedVolume_us_ = 0;
+    double dollarVolume_us_ = 0.0;
 
-    // Quote
-    double latestBid;
-    double latestAsk;
-    int64_t latestBidSize_us; // 1 share = 1,000,000 micro shares
-    int64_t latestAskSize_us;
+    /* ---------------------------------- Quote --------------------------------- */
+    double latestBid_ = 0.0;
+    double latestAsk_ = 0.0;
+    int64_t latestBidSize_us_ = 0; // 1 share = 1,000,000 micro shares
+    int64_t latestAskSize_us_ = 0;
 
-    // OHLC
-    double open;
-    double high;
-    double low;
-    double close;
+    /* ---------------------------------- OHLC ---------------------------------- */
+    double open_ = 0.0;
+    double high_ = 0.0;
+    double low_ = 0.0;
+    double close_ = 0.0;
 
-    // for stdev
-    double priceMeanRunning = 0.0;
-    double priceM2 = 0.0;
+    /* ----------------------- Running variance (Welford) ----------------------- */
+    double priceMeanRunning_ = 0.0;
+    double priceM2_ = 0.0;
 
-    double sizeMeanRunning_us = 0.0;
-    double sizeM2_us = 0.0;
+    double sizeMeanRunning_us_ = 0.0;
+    double sizeM2_us_ = 0.0;
 
-    // array
-    std::vector<double> prices;
-    std::vector<int64_t> sizes_us;
+    /* ------------------------------- Raw samples ------------------------------ */
+    std::vector<double> prices_;
+    std::vector<int64_t> sizes_us_;
 
     bool hasValidQuote() const;
 };

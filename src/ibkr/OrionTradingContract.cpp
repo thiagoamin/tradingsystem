@@ -1,51 +1,51 @@
 #include "OrionTradingContract.h"
 
-Contract OrionTradingContract::makeStock(const std::string &symbol)
+Contract OrionTradingContract::makeUsEquity(const std::string &symbol)
 {
     Contract c;
-    c.symbol = symbol; // "AAPL", "TSLA"
+    c.symbol = symbol;
     c.secType = "STK";
-    c.exchange = "SMART";
+    c.exchange = "SMART"; // Routes across major US exchanges
     c.currency = "USD";
     return c;
 }
 
 Contract OrionTradingContract::SPY()
 {
-    return makeStock("SPY");
+    return makeUsEquity("SPY");
 }
 
 Contract OrionTradingContract::QQQ()
 {
-    return makeStock("QQQ");
+    return makeUsEquity("QQQ");
 }
 
 Contract OrionTradingContract::TSLA()
 {
-    return makeStock("TSLA");
+    return makeUsEquity("TSLA");
 }
 
 Contract OrionTradingContract::AAPL()
 {
-    return makeStock("AAPL");
+    return makeUsEquity("AAPL");
 }
 
 Contract OrionTradingContract::MSFT()
 {
-    return makeStock("MSFT");
+    return makeUsEquity("MSFT");
 }
 
 Contract OrionTradingContract::NVDA()
 {
-    return makeStock("NVDA");
+    return makeUsEquity("NVDA");
 }
 
 Contract OrionTradingContract::GOOGL()
 {
-    return makeStock("GOOGL");
+    return makeUsEquity("GOOGL");
 }
 
 Contract OrionTradingContract::AMZN()
 {
-    return makeStock("AMZN");
+    return makeUsEquity("AMZN");
 }

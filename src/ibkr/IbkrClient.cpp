@@ -37,7 +37,7 @@ bool IbkrClient::connect(const char *host, int port, int clientId)
         printf("Successfully connected to %s:%d clientId:%d serverVersion: %d\n",
                pClientSocket_->host().c_str(), pClientSocket_->port(), clientId, pClientSocket_->EClient::serverVersion());
 
-        pReader_ = std::make_unique<EReader>(pClientSocket_.get(), &osSignal_);
+        pReader_ = std::make_unique<EReader>(pClientSocket_.get(), &osSignal_); // Construct object now
         pReader_->start();
     }
     else
@@ -130,6 +130,8 @@ void IbkrClient::error(int id, time_t errorTime, int errorCode,
         printf("Error. Id: %d, Time: %s, Code: %d, Msg: %s\n",
                id, errorTimeStr, errorCode, errorString.c_str());
     }
+
+    // TODO: Do more here
 }
 
 // IBKR Tick Price Updates
@@ -228,6 +230,7 @@ void IbkrClient::tickByTickAllLast(int reqId,
 
 void IbkrClient::connectionClosed()
 {
+    // TODO: Do more here
     std::cout << "Connection closed\n";
 
     subscribed_ = false;
@@ -236,6 +239,7 @@ void IbkrClient::connectionClosed()
 // Core event loop
 void IbkrClient::processMessages()
 {
+    // TODO: blocking logic, figure timing, threads, and etc. no hangups
     osSignal_.waitForSignal();
     if (pReader_)
     {
