@@ -1,9 +1,9 @@
-# Trading System
+# Quantitative Trading System
 
 This repository is building a modular algorithmic trading platform with two main execution modes:
 
-- **Backtesting** on historical data.
-- **Paper trading** on Interactive Brokers (IBKR).
+- **Backtesting** on historical data in Python 🐍.
+- **Paper trading / live trading infrastructure** in C++ ⚙️ using Interactive Brokers (IBKR).
 
 The core architecture is:
 
@@ -16,8 +16,17 @@ The core architecture is:
 
 ## Folder Guide
 
-- `engine/` - core trading runtime and orchestration.
+- `engine/` - core Python trading runtime and orchestration.
 - `data/` - data feed wrappers and feature pipeline.
 - `research/fetchers/` - provider abstraction and data models.
 - `research/` - experimental backtesting and signal/utility exploration.
 - `tests/` - unit tests for core modules.
+
+#### C++ Trading Infrastructure
+- `src/` - where the C++ trading infrastructure lis
+- `src/ibkr` - integrates our system with ibkr and wraps ibkr data callbacks
+- `src/market_data` - market data ingestion
+- `src/execution` - where execution pipelines will lie
+- `src/core` - shared core logic between the layers
+
+
