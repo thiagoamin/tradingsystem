@@ -23,7 +23,7 @@ The core architecture is:
 - `tests/` - unit tests for core modules.
 
 #### C++ Trading Infrastructure
-- `src/` - where the C++ trading infrastructure lis
+- `src/` - core C++ trading infrastructure
 - `src/ibkr` - integrates our system with ibkr and wraps ibkr data callbacks
 - `src/market_data` - market data ingestion
 - `src/execution` - where execution pipelines will lie
