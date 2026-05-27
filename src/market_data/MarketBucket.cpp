@@ -4,127 +4,143 @@
 
 MarketBucket::MarketBucket()
 {
-    prices.reserve(4096);
-    sizes_us.reserve(4096);
+    prices_.reserve(4096);
+    sizes_us_.reserve(4096);
 }
 
 void MarketBucket::add(const TradeTick &tick, const QuoteSnapshot &quote)
 {
     // OHLC
-    if (tradeCount == 0)
+    if (tradeCount_ == 0)
     {
-        startTimeStamp_ns = tick.exchangeTimestamp_ns;
-        open = tick.price;
-        high = tick.price;
-        low = tick.price;
+        startTimeStamp_ns_ = tick.exchangeTimestamp_ns;
+        open_ = tick.price;
+        high_ = tick.price;
+        low_ = tick.price;
     }
 
-    close = tick.price;
-    endTimeStamp_ns = tick.exchangeTimestamp_ns;
+    close_ = tick.price;
+    endTimeStamp_ns_ = tick.exchangeTimestamp_ns;
 
-    high = (high > tick.price) ? high : tick.price;
-    low = (low < tick.price) ? low : tick.price;
+    high_ = (high_ > tick.price) ? high_ : tick.price;
+    low_ = (low_ < tick.price) ? low_ : tick.price;
 
     // accumulation
-    tradeCount++;
-    priceTotal += tick.price;
-    unsignedVolume_us += tick.size_us;
-    dollarVolume_us += tick.price * tick.size_us;
+    tradeCount_++;
+    priceTotal_ += tick.price;
+    unsignedVolume_us_ += tick.size_us;
+    dollarVolume_us_ += tick.price * tick.size_us;
 
     // quote
-    latestBid = quote.bid;
-    latestAsk = quote.ask;
-    latestBidSize_us = quote.bidSize_us;
-    latestAskSize_us = quote.askSize_us;
+    latestBid_ = quote.bid;
+    latestAsk_ = quote.ask;
+    latestBidSize_us_ = quote.bidSize_us;
+    latestAskSize_us_ = quote.askSize_us;
 
     double midpoint = (quote.bid + quote.ask) / 2.0;
     int sign = tick.price >= midpoint ? +1 : -1;
 
-    signedVolume_us += sign * tick.size_us;
+    signedVolume_us_ += sign * tick.size_us;
 
     // array
-    prices.push_back(tick.price);
-    sizes_us.push_back(tick.size_us);
+    prices_.push_back(tick.price);
+    sizes_us_.push_back(tick.size_us);
 
     // Price Welford
-    double priceDelta = tick.price - priceMeanRunning;
-    priceMeanRunning += priceDelta / tradeCount;
+    double priceDelta = tick.price - priceMeanRunning_;
+    priceMeanRunning_ += priceDelta / tradeCount_;
 
-    double priceDelta2 = tick.price - priceMeanRunning;
-    priceM2 += priceDelta * priceDelta2;
+    double priceDelta2 = tick.price - priceMeanRunning_;
+    priceM2_ += priceDelta * priceDelta2;
 
     // Size Welford
     double size = static_cast<double>(tick.size_us);
 
-    double sizeDelta = size - sizeMeanRunning_us;
-    sizeMeanRunning_us += sizeDelta / tradeCount;
+    double sizeDelta = size - sizeMeanRunning_us_;
+    sizeMeanRunning_us_ += sizeDelta / tradeCount_;
 
-    double sizeDelta2 = size - sizeMeanRunning_us;
-    sizeM2_us += sizeDelta * sizeDelta2;
+    double sizeDelta2 = size - sizeMeanRunning_us_;
+    sizeM2_us_ += sizeDelta * sizeDelta2;
 }
 
 FeatureBar MarketBucket::build(InstrumentId id, int64_t bucketId) const
 {
     FeatureBar bar = {};
+
     bar.instrumentId = id;
     bar.barId = bucketId;
-    bar.startTimeStamp_ns = startTimeStamp_ns;
-    bar.endTimeStamp_ns = endTimeStamp_ns;
-    bar.interval_ns = endTimeStamp_ns - startTimeStamp_ns;
+    bar.startTimeStamp_ns = startTimeStamp_ns_;
+    bar.endTimeStamp_ns = endTimeStamp_ns_;
+    bar.interval_ns = endTimeStamp_ns_ - startTimeStamp_ns_;
 
     // trade derived
-    bar.tradeCount = tradeCount;
-    bar.unsignedVolume_us = unsignedVolume_us;
-    bar.signedVolume_us = signedVolume_us;
-    bar.dollarVolume_us = dollarVolume_us;
+    bar.tradeCount = tradeCount_;
+    bar.unsignedVolume_us = unsignedVolume_us_;
+    bar.signedVolume_us = signedVolume_us_;
+    bar.dollarVolume_us = dollarVolume_us_;
 
-    // zero guards, tradecount is already guarded
-    if (unsignedVolume_us != 0)
+    // zero guards
+    if (unsignedVolume_us_ != 0)
     {
-        bar.vwap = dollarVolume_us / unsignedVolume_us;
-        bar.svi = static_cast<double>(signedVolume_us) / unsignedVolume_us;
+        bar.vwap = dollarVolume_us_ / unsignedVolume_us_;
+        bar.svi = static_cast<double>(signedVolume_us_) / unsignedVolume_us_;
     }
+
     if (hasValidQuote())
     {
         // quote derived
-        double midpointClose = (latestBid + latestAsk) / 2.0;
+        double midpointClose = (latestBid_ + latestAsk_) / 2.0;
+
         bar.midpointClose = midpointClose;
-        bar.spreadClose = latestAsk - latestBid;
-        bar.spreadBpts = 10'000LL * (bar.spreadClose) / midpointClose;
-        bar.quoteImbalance = static_cast<double>(latestBidSize_us - latestAskSize_us) / (latestBidSize_us + latestAskSize_us);
-        bar.microPrice = (latestAsk * latestBidSize_us + latestBid * latestAskSize_us) / (latestAskSize_us + latestBidSize_us);
+        bar.spreadClose = latestAsk_ - latestBid_;
+
+        bar.spreadBpts =
+            10'000LL * (bar.spreadClose) / midpointClose;
+
+        bar.quoteImbalance =
+            static_cast<double>(
+                latestBidSize_us_ - latestAskSize_us_) /
+            (latestBidSize_us_ + latestAskSize_us_);
+
+        bar.microPrice =
+            (latestAsk_ * latestBidSize_us_ +
+             latestBid_ * latestAskSize_us_) /
+            (latestAskSize_us_ + latestBidSize_us_);
+
         if (bar.spreadClose != 0.0)
         {
-            bar.microPriceDev = (bar.microPrice - bar.midpointClose) / (bar.spreadClose);
+            bar.microPriceDev =
+                (bar.microPrice - bar.midpointClose) /
+                (bar.spreadClose);
         }
 
         // trade derived
-        bar.vwapGap = (bar.vwap - midpointClose) / midpointClose;
+        bar.vwapGap =
+            (bar.vwap - midpointClose) / midpointClose;
     }
-
     // OHLC
-    bar.open = open;
-    bar.close = close;
-    bar.high = high;
-    bar.low = low;
+    bar.open = open_;
+    bar.close = close_;
+    bar.high = high_;
+    bar.low = low_;
 
-    bar.priceMean = priceTotal / tradeCount;
-    bar.sizeMean_us = static_cast<double>(unsignedVolume_us) / tradeCount;
+    bar.priceMean = priceTotal_ / tradeCount_;
+    bar.sizeMean_us = static_cast<double>(unsignedVolume_us_) / tradeCount_;
 
     bar.priceStdev =
-        std::sqrt(priceM2 / tradeCount);
+        std::sqrt(priceM2_ / tradeCount_);
 
     bar.sizeStdev_us =
-        std::sqrt(sizeM2_us / tradeCount);
+        std::sqrt(sizeM2_us_ / tradeCount_);
 
     // TODO, do this better
-    auto sortedPrices = prices;
-    auto sortedSizes = sizes_us;
+    auto sortedPrices = prices_;
+    auto sortedSizes = sizes_us_;
 
     std::sort(sortedPrices.begin(), sortedPrices.end());
     std::sort(sortedSizes.begin(), sortedSizes.end());
 
-    size_t n_price = prices.size() - 1;
+    size_t n_price = prices_.size() - 1;
 
     // truncating size
     bar.priceQ1 = sortedPrices[static_cast<size_t>(n_price * 0.25)];
@@ -141,34 +157,34 @@ FeatureBar MarketBucket::build(InstrumentId id, int64_t bucketId) const
 }
 void MarketBucket::clear()
 {
-    startTimeStamp_ns = 0;
-    endTimeStamp_ns = 0;
+    startTimeStamp_ns_ = 0;
+    endTimeStamp_ns_ = 0;
 
-    tradeCount = 0;
-    priceTotal = 0.0;
-    unsignedVolume_us = 0;
-    signedVolume_us = 0;
-    dollarVolume_us = 0.0;
+    tradeCount_ = 0;
+    priceTotal_ = 0.0;
+    unsignedVolume_us_ = 0;
+    signedVolume_us_ = 0;
+    dollarVolume_us_ = 0.0;
 
-    open = high = low = close = 0.0;
+    open_ = high_ = low_ = close_ = 0.0;
 
-    priceMeanRunning = 0.0;
-    priceM2 = 0.0;
-    sizeMeanRunning_us = 0.0;
-    sizeM2_us = 0.0;
+    priceMeanRunning_ = 0.0;
+    priceM2_ = 0.0;
+    sizeMeanRunning_us_ = 0.0;
+    sizeM2_us_ = 0.0;
 
-    prices.clear();
-    sizes_us.clear();
+    prices_.clear();
+    sizes_us_.clear();
 }
 bool MarketBucket::isEmpty()
 {
-    return tradeCount == 0;
+    return tradeCount_ == 0;
 }
 
 bool MarketBucket::hasValidQuote() const
 {
-    return latestBid > 0.0 &&
-           latestAsk > 0.0 &&
-           latestBidSize_us > 0 &&
-           latestAskSize_us > 0;
+    return latestBid_ > 0.0 &&
+           latestAsk_ > 0.0 &&
+           latestBidSize_us_ > 0 &&
+           latestAskSize_us_ > 0;
 }
