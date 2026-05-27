@@ -180,17 +180,16 @@ public:
     void connectionClosed() override;
 
 private:
-    MarketDataEngine &marketDataEngine_;
+    MarketDataEngine &marketDataEngine_;           ///< Reference to the engine handling order books and data feeds.
+    EReaderOSSignal osSignal_;                     ///< Condition variable signaling when raw network packets arrive.
+    std::unique_ptr<EClientSocket> pClientSocket_; ///< Socket interface used to send outbound requests to IBKR.
+    std::unique_ptr<EReader> pReader_;             ///< Background packet reader that captures the low-level TCP stream.
 
-    EReaderOSSignal osSignal_;
-    std::unique_ptr<EClientSocket> pClientSocket_;
-    std::unique_ptr<EReader> pReader_;
-
-    std::unordered_map<TickerId, InstrumentId> reqIdToInstrumentId_;
-    std::unordered_map<InstrumentId, QuoteSnapshot> quote_cache_;
-    STATE state_;
-    bool subscribed_;
-    OrderId orderId_;
+    std::unordered_map<TickerId, InstrumentId> reqIdToInstrumentId_; ///< Maps IBKR request IDs to InstrumentId enum.
+    std::unordered_map<InstrumentId, QuoteSnapshot> quote_cache_;    ///< Local cache storing the latest Level 1 quotes per instrument.
+    STATE state_;                                                    ///< Current phase of the client's connection finite state machine.
+    bool subscribed_;                                                ///< Track if active market data subscriptions have been initialized.
+    OrderId orderId_;                                                ///< The next valid, sequential order ID tracked for execution.
 
     /* -------------------------------------------------------------------------- */
     /*                               Helper Functions                             */
