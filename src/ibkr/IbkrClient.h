@@ -131,7 +131,9 @@ public:
                const std::string &errorString,
                const std::string &advancedOrderRejectJson) override;
     /**
-     * @brief Receives market data price updates (e.g., Bid, Ask, Last) for a subscription.
+     * @brief Receives market data price updates (e.g., Bid, Ask, Last) for a subscription and
+     * awaits tickSize for the full cached Quote Data (tickPrice and tickSize callback occur roughly every
+     * 250ms according to IBKR).
      *
      * @param tickerId  The unique ID assigned to the data request.
      * @param field     The type of price field being updated (mapped via TickType enum).
@@ -144,7 +146,9 @@ public:
                    const TickAttrib &attribs) override;
 
     /**
-     * @brief Receives market data size updates (e.g., Bid Size, Ask Size) for a subscription.
+     * @brief Receives market data size updates (e.g., Bid Size, Ask Size) for a subscription
+     * immediately after tickPrice callback (tickPrice and tickSize callback occur roughly every
+     * 250ms according to IBKR).
      *
      * @param tickerId  The unique ID assigned to the data request.
      * @param field     The type of size field being updated (mapped via TickType enum).
@@ -203,14 +207,14 @@ private:
 
     /**
      * @brief Executes the initial baseline data subscriptions across target instrument (stock) registries.
-     *
+     * Identifier: (1000s for quote, 20000s for trade).
      */
     void subscribe();
 
     /**
      * @brief Subscribes to standard top-of-book streaming updates (Level 1 data).
      *
-     * @param reqId         A newly generated, unique subscription tracking handle (1000s for quote, 20000s for trade).
+     * @param reqId         A newly generated, unique subscription tracking handle (1000s).
      * @param instrumentId  The destination internal tracking identifier based on InstrumentId enum.
      * @param contract      The physical asset criteria specifying target exchange and instrument symbols.
      */
@@ -219,7 +223,7 @@ private:
     /**
      * @brief Subscribes to comprehensive granular tick-by-tick historical execution feeds.
      *
-     * @param reqId         A newly generated, unique subscription tracking handle (1000s for quote, 20000s for trade).
+     * @param reqId         A newly generated, unique subscription tracking handle (20000s).
      * @param instrumentId  The destination internal tracking identifier based on InstrumentId enum.
      * @param contract      The physical asset criteria specifying target exchange and instrument symbols.
      */

@@ -176,7 +176,7 @@ void MarketBucket::clear()
     prices_.clear();
     sizes_us_.clear();
 }
-bool MarketBucket::isEmpty()
+bool MarketBucket::isEmpty() const
 {
     return tradeCount_ == 0;
 }

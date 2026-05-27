@@ -7,7 +7,7 @@
  * @brief Discrete time-driven snapshot tracking top-of-book market depth state.
  *
  * @details Captures the final synchronized limit order book state before the
- * conclusion of each continuous 250ms observation interval.
+ * conclusion of each continuous ~250ms observation interval.
  */
 struct QuoteSnapshot
 {
