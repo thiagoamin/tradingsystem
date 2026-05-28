@@ -8,7 +8,7 @@ MarketBucket::MarketBucket()
     sizes_us_.reserve(4096);
 }
 
-void MarketBucket::add(const TradeTick &tick, const QuoteSnapshot &quote)
+void MarketBucket::addTick(const TradeTick &tick)
 {
     // OHLC
     if (tradeCount_ == 0)
@@ -31,13 +31,7 @@ void MarketBucket::add(const TradeTick &tick, const QuoteSnapshot &quote)
     unsignedVolume_us_ += tick.size_us;
     dollarVolume_us_ += tick.price * tick.size_us;
 
-    // quote
-    latestBid_ = quote.bid;
-    latestAsk_ = quote.ask;
-    latestBidSize_us_ = quote.bidSize_us;
-    latestAskSize_us_ = quote.askSize_us;
-
-    double midpoint = (quote.bid + quote.ask) / 2.0;
+    double midpoint = (latestBid_ + latestAsk_) / 2.0;
     int sign = tick.price >= midpoint ? +1 : -1;
 
     signedVolume_us_ += sign * tick.size_us;
@@ -61,6 +55,22 @@ void MarketBucket::add(const TradeTick &tick, const QuoteSnapshot &quote)
 
     double sizeDelta2 = size - sizeMeanRunning_us_;
     sizeM2_us_ += sizeDelta * sizeDelta2;
+}
+
+void MarketBucket::addQuote(const QuoteSnapshot &quote)
+{
+    // quote
+    quoteCount_++;
+
+    latestBid_ = quote.bid;
+    latestAsk_ = quote.ask;
+    latestBidSize_us_ = quote.bidSize_us;
+    latestAskSize_us_ = quote.askSize_us;
+
+    bidTotal_ += latestBid_;
+    askTotal_ += latestAsk_;
+    bidSizeTotal_us_ += quote.bidSize_us;
+    askSizeTotal_us_ += quote.askSize_us;
 }
 
 FeatureBar MarketBucket::build(InstrumentId id, int64_t bucketId) const
@@ -89,29 +99,55 @@ FeatureBar MarketBucket::build(InstrumentId id, int64_t bucketId) const
     if (hasValidQuote())
     {
         // quote derived
-        double midpointClose = (latestBid_ + latestAsk_) / 2.0;
+        double bidAvg = bidTotal_ / quoteCount_;
+        double askAvg = askTotal_ / quoteCount_;
+        double bidSizeAvg = static_cast<double>(bidSizeTotal_us_) / quoteCount_;
+        double askSizeAvg = static_cast<double>(askSizeTotal_us_) / quoteCount_;
+
+        double midpointClose =
+            (latestBid_ + latestAsk_) / 2.0;
+        double midpointAvg =
+            (bidAvg + askAvg) / 2.0;
 
         bar.midpointClose = midpointClose;
+        bar.midpointAvg = midpointAvg;
+
         bar.spreadClose = latestAsk_ - latestBid_;
+        bar.spreadAvg = askAvg - bidAvg;
 
-        bar.spreadBpts =
+        bar.spreadBptsClose =
             10'000LL * (bar.spreadClose) / midpointClose;
+        bar.spreadBptsAvg =
+            10'000LL * (bar.spreadAvg) / midpointAvg;
 
-        bar.quoteImbalance =
+        bar.quoteImbalanceClose =
             static_cast<double>(
                 latestBidSize_us_ - latestAskSize_us_) /
             (latestBidSize_us_ + latestAskSize_us_);
+        bar.quoteImbalanceAvg =
+            (bidSizeAvg - askSizeAvg) /
+            (bidSizeAvg + askSizeAvg);
 
-        bar.microPrice =
+        bar.microPriceClose =
             (latestAsk_ * latestBidSize_us_ +
              latestBid_ * latestAskSize_us_) /
             (latestAskSize_us_ + latestBidSize_us_);
+        bar.microPriceAvg =
+            (askAvg * bidSizeAvg +
+             bidAvg * askSizeAvg) /
+            (askSizeAvg + bidSizeAvg);
 
         if (bar.spreadClose != 0.0)
         {
-            bar.microPriceDev =
-                (bar.microPrice - bar.midpointClose) /
+            bar.microPriceDevClose =
+                (bar.microPriceClose - bar.midpointClose) /
                 (bar.spreadClose);
+        }
+        if (bar.spreadAvg != 0.0)
+        {
+            bar.microPriceDevAvg =
+                (bar.microPriceAvg - bar.midpointAvg) /
+                (bar.spreadAvg);
         }
 
         // trade derived
@@ -166,6 +202,12 @@ void MarketBucket::clear()
     signedVolume_us_ = 0;
     dollarVolume_us_ = 0.0;
 
+    quoteCount_ = 0.0;
+    bidTotal_ = 0.0;
+    askTotal_ = 0.0;
+    bidSizeTotal_us_ = 0.0;
+    askSizeTotal_us_ = 0.0;
+
     open_ = high_ = low_ = close_ = 0.0;
 
     priceMeanRunning_ = 0.0;
@@ -187,4 +229,9 @@ bool MarketBucket::hasValidQuote() const
            latestAsk_ > 0.0 &&
            latestBidSize_us_ > 0 &&
            latestAskSize_us_ > 0;
+}
+
+bool MarketBucket::isQuoteEmpty() const
+{
+    return quoteCount_ == 0;
 }

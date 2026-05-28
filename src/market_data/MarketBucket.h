@@ -38,12 +38,18 @@ public:
     MarketBucket();
 
     /**
-     * @brief Aggregates an execution tick and caches the most recent top-of-book context.
+     * @brief Aggregates an execution trade tick.
      *
      * @param tick   Inbound trade execution print.
-     * @param quote  Most recent quote snapshot.
      */
-    void add(const TradeTick &tick, const QuoteSnapshot &quote);
+    void addTick(const TradeTick &tick);
+
+    /**
+     * @brief Aggregates the most recent top-of-book context.
+     *
+     * @param quote Most recent quote snapshot.
+     */
+    void addQuote(const QuoteSnapshot &quote);
 
     /**
      * @brief Processes accumulated data in market bucket to compile a finalized FeatureBar.
@@ -67,6 +73,15 @@ public:
      */
     bool isEmpty() const;
 
+    /**
+     * @brief After clear(), need to ensure tick data that uses latest Quote
+     * adds to the total Quote.
+     *
+     * @return true  If quoteCount_ equal to 0.
+     * @return false If quoteCount_ > 0.
+     */
+    bool isQuoteEmpty() const;
+
 private:
     /* -------------------------- Bucket Time Interval -------------------------- */
     int64_t startTimeStamp_ns_ = 0;
@@ -80,10 +95,17 @@ private:
     double dollarVolume_us_ = 0.0;
 
     /* ---------------------------------- Quote --------------------------------- */
+    int64_t quoteCount_ = 0;
+
     double latestBid_ = 0.0;
     double latestAsk_ = 0.0;
     int64_t latestBidSize_us_ = 0; // 1 share = 1,000,000 micro shares
     int64_t latestAskSize_us_ = 0;
+
+    double bidTotal_ = 0.0;
+    double askTotal_ = 0.0;
+    int64_t bidSizeTotal_us_ = 0; // 1 share = 1,000,000 micro shares
+    int64_t askSizeTotal_us_ = 0;
 
     /* ---------------------------------- OHLC ---------------------------------- */
     double open_ = 0.0;
