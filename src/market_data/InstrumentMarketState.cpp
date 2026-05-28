@@ -9,8 +9,8 @@ InstrumentMarketState::InstrumentMarketState(InstrumentId id) : instrumentId_(id
 
 void InstrumentMarketState::onTick(const TradeTick &tick)
 {
-    // change this bc this is not gonna push/ pull 15s
-    int64_t currId = tick.exchangeTimestamp_ns / FifteenSec_ns;
+    // !TODO: Update this later because feature bar will not push if new tick right after 15s comes
+    int64_t currId = tick.exchangeTimestamp_ns / kFifteenSec_ns;
 
     if (bucketId_15s_ == -1)
     {

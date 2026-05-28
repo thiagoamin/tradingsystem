@@ -33,7 +33,7 @@
 class InstrumentMarketState
 {
 public:
-    static constexpr int64_t FifteenSec_ns = 15'000'000LL;
+    static constexpr int64_t kFifteenSec_ns = 15'000'000'000LL;
 
     /**
      * @brief Constructs an isolated state machine for a specific asset.
