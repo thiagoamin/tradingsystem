@@ -1,0 +1,2 @@
+valid_prediction_count,trend_label_count,mean_reversion_label_count,accuracy_50,brier_score,mean_probability,trend_mode_days,mean_reversion_mode_days,active_signal_days
+531,268,263,0.5423728813559322,0.25023820556813564,0.49502149777520676,49,131,180

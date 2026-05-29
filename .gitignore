@@ -21,5 +21,6 @@ research/fetchers/thetadata/creds.txt
 
 # Data
 research/raw_data_cache/
+research/experiment_outputs
 
 *.egg-info/

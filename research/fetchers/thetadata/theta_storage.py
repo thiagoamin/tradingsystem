@@ -33,6 +33,10 @@ class ThetaDataStorage:
         """Return canonical parquet path for raw quote records."""
         return self._raw_path(kind="quote", symbol=symbol, trading_date=trading_date)
 
+    def raw_eod_path(self, symbol: str) -> Path:
+        """Return canonical parquet path for a raw EOD history pull."""
+        return self.data_root / "thetadata_raw" / "eod" / f"symbol={symbol.upper()}" / "part.parquet"
+
     def exists_raw_trades(self, symbol: str, trading_date: date) -> bool:
         return self.raw_trades_path(symbol, trading_date).exists()
 
@@ -41,6 +45,10 @@ class ThetaDataStorage:
 
     def exists_raw_quotes(self, symbol: str, trading_date: date) -> bool:
         return self.raw_quotes_path(symbol, trading_date).exists()
+
+    def exists_raw_eod(self, symbol: str) -> bool:
+        """Return whether EOD records have been cached for ``symbol``."""
+        return self.raw_eod_path(symbol).exists()
 
     def save_raw_trades(
         self,
@@ -75,6 +83,10 @@ class ThetaDataStorage:
         path = self.raw_quotes_path(symbol, trading_date)
         return self._write_parquet(df=df, path=path, overwrite=overwrite)
 
+    def save_raw_eod(self, df: DataFrameLike, symbol: str, overwrite: bool = False) -> Path:
+        """Persist a raw ThetaData EOD history response as parquet."""
+        return self._write_parquet(df=df, path=self.raw_eod_path(symbol), overwrite=overwrite)
+
     def _raw_path(
         self,
         kind: DatasetKind,
@@ -107,7 +119,9 @@ class ThetaDataStorage:
             return path
 
         if isinstance(df, pd.DataFrame):
-            df.to_parquet(path, index=False, compression="zstd")
+            pl.DataFrame({str(column): df[column].to_list() for column in df.columns}).write_parquet(
+                path, compression="zstd", compression_level=9
+            )
             return path
 
         raise TypeError(f"Unsupported dataframe type for parquet saving: {type(df)!r}")

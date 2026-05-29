@@ -1,0 +1,36 @@
+Hybrid residual nested walk-forward tuning
+
+No-leakage contract: candidates are selected on each fold's inner validation window, then evaluated once on the outer test window.
+
+Overall summary:
+                   experiment  num_folds selection_objective  min_validation_active_rate  cum_return  mean_bar_return  bar_vol   sharpe  max_drawdown  hit_rate  turnover  avg_gross_exposure  active_rate  position_change_count
+hybrid_residual_nested_tuning         17              sharpe                        0.03    0.025661         0.000025  0.00067 0.593799      -0.01456  0.198039  0.019779            0.037669     0.359804              20.174381
+
+Selected candidate counts:
+                  candidate  selected_folds
+         invtrend_p060_s150               2
+mr_p035_s175__inv_p070_s125               2
+               mr_p030_s125               2
+         invtrend_p060_s100               1
+         invtrend_p065_s100               1
+mr_p035_s175__inv_p065_s150               1
+mr_p035_s150__inv_p065_s125               1
+               mr_p035_s200               1
+               mr_p030_s200               1
+               mr_p035_s150               1
+               mr_p035_s125               1
+mr_p035_s175__inv_p065_s125               1
+mr_p030_s175__inv_p070_s150               1
+mr_p030_s175__inv_p065_s150               1
+
+Selected family counts:
+                           family  selected_folds
+mean_reversion_plus_inverse_trend               7
+                   mean_reversion               6
+                    inverse_trend               4
+
+Mode attribution:
+          mode  cum_return  mean_bar_return  bar_vol   sharpe  max_drawdown  hit_rate  turnover  avg_gross_exposure  active_rate  position_change_count  gross_pnl_sum  transaction_cost_sum  net_pnl_sum  active_observations  active_hit_rate
+mean_reversion    0.013645         0.000013 0.000420 0.506086     -0.006903  0.148039  0.009597            0.022766     0.273529               9.788560       0.018282              0.004639     0.013643                  279         0.541219
+ inverse_trend    0.011860         0.000012 0.000512 0.362442     -0.012578  0.066667  0.010344            0.015366     0.112745              10.550443       0.017073              0.005149     0.011924                  115         0.591304
+          flat    0.000000         0.000000 0.000000      NaN      0.000000  0.000000  0.000000            0.000000     0.000000               0.000000       0.000000              0.000000     0.000000                    0              NaN

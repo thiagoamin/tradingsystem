@@ -7,6 +7,8 @@ Implementation map:
 - `spec.py`: stock-to-factor assignments via `FactorSpec`
 - `estimators.py`: exposure estimators such as `OLSExposureEstimator`, `RidgeExposureEstimator`, and `ElasticNetExposureEstimator`
 - `model.py`: orchestration in `FactorResidualizationModel`
+- `rolling_estimators.py`: lagged rolling OLS estimation for time-varying daily betas
+- `rolling_model.py`: residual paths calculated from lagged rolling beta estimates
 
 ## General Model
 
@@ -129,4 +131,36 @@ $$
 
 That gives coefficients that can be used directly in the original return equation.
 
+## Rolling Daily ETF Residualization
 
+`RollingOLSExposureEstimator` supports the daily paper-replication baseline.
+The estimator can preserve the no-intercept convention of the intraday models,
+or fit an intercept when `fit_intercept=True`. The daily ETF experiment enables
+the intercept to match its regression specification. At decision row $t$, it
+estimates parameters from the trailing window ending at $t-1$:
+
+$$
+=
+\left(\widehat{\alpha}_{i,t},\widehat{\beta}_{i,t}\right)
+=
+\underset{\alpha,\beta}{\arg\min}
+\sum_{u=t-M}^{t-1}
+\left(R_{i,u} - \alpha - \beta^\top F_u\right)^2.
+$$
+
+The realized residual return for date $t$ is then
+
+$$
+\widetilde{R}_{i,t}
+=
+R_{i,t} - \widehat{\alpha}_{i,t} - \widehat{\beta}_{i,t}^{\top}F_t.
+$$
+
+Because the fit excludes row $t$, the residual at $t$ uses only exposures
+known before that day's return is evaluated. `RollingFactorResidualizationModel`
+therefore permits `fit_transform(...)` on an ordered return panel without
+introducing lookahead through beta estimation.
+
+The daily ETF replication composition sets `window=60` and `min_obs=60`, so no
+daily beta or residual is produced until 60 valid prior return observations
+exist for the requested factor specification.

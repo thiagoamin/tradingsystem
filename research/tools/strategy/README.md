@@ -26,95 +26,90 @@ The base abstraction is:
 
 Concrete strategies:
 
-- [residual_zscore.py](/Users/thiagoamin/Desktop/trading_system/research/tools/strategy/residual_zscore.py)
-  - `ResidualZScoreStrategy`
-  - builds long/short/flat positions from rolling residual z-scores
+- [ou_s_score.py](ou_s_score.py)
+  - `OUSScoreStrategy`
+  - applies the Avellaneda--Lee-style stateful open/close rules to OU s-scores
+- [hybrid_residual.py](hybrid_residual.py)
+  - `HybridResidualStrategy`
+  - chooses residual trend-following, residual mean-reversion, or flat using residual state scores and predicted regime probabilities
 
-Residual strategy with market-variable filters:
+## OU S-Score Strategy
 
-- [residual_variable.py](/Users/thiagoamin/Desktop/trading_system/research/tools/strategy/residual_variable.py)
-  - `ResidualVariableStrategy`
-  - starts from residual z-score mean reversion
-  - can require acceptable quoted spread and confirming microprice pressure before entering a trade
-
-Forecast-driven strategy:
-
-- [forecast_zscore.py](/Users/thiagoamin/Desktop/trading_system/research/tools/strategy/forecast_zscore.py)
-  - `ForecastZScoreStrategy`
-  - trades in the direction of unusually large residual forecasts
-
-## Residual Mean Reversion
-
-For a residual panel $\epsilon_i(t)$, the residual z-score strategy computes:
+`OUSScoreStrategy` consumes the lagged OU s-scores produced by
+`RollingOUScoreModel`. For stock-side signal $z_{i,t}\in\{-1,0,+1\}$:
 
 $$
-z_i(t) =
-\frac{\epsilon_i(t) - \text{rolling\_mean}_w(\epsilon_i)(t)}
-{\text{rolling\_std}_w(\epsilon_i)(t)}
+\begin{array}{lll}
+z_{i,t}=+1 \text{ from flat} & \text{if} & s_{i,t} < -1.25,\\
+z_{i,t}=-1 \text{ from flat} & \text{if} & s_{i,t} > +1.25,\\
+z_{i,t}=0 \text{ from short} & \text{if} & s_{i,t} < +0.75,\\
+z_{i,t}=0 \text{ from long} & \text{if} & s_{i,t} > -0.50.
+\end{array}
 $$
 
-The mean-reversion rule is:
+A new entry is allowed only when the OU model marks the stock eligible on
+that date. If an existing trade receives a valid score but becomes
+ineligible, it remains subject to its exit rule; eligibility does not force
+liquidation. A missing score closes the trade because no valid current
+mean-reversion state is available.
+
+## Hybrid Residual Regime Strategy
+
+`HybridResidualStrategy` consumes `ResidualStateResult` plus a probability
+panel $p_{i,t}=P(\text{trend regime})$ from `ResidualRegimePredictor`.
+
+Trend mode opens when:
 
 $$
-q_i(t) =
-\begin{cases}
-+1, & z_i(t) \le -z_{\text{entry}} \\
--1, & z_i(t) \ge z_{\text{entry}} \\
-0, & |z_i(t)| \le z_{\text{exit}} \text{ after a position is open}
-\end{cases}
+p_{i,t} \ge p^{TR}_{open}
+\quad\text{and}\quad
+|s^{TR}_{i,t}| \ge c^{TR}_{open}.
 $$
 
-So a very negative residual enters long, and a very positive residual enters short.
-
-## Residual Variable Filters
-
-`ResidualVariableStrategy` uses the same residual z-score entry rule, but can reject entries using market-state variables.
-
-The spread filter requires:
+The stock-side trend signal is:
 
 $$
-\text{spread\_bps}_{i,t} \le \text{max\_spread\_bps}
+q^{TR}_{i,t}=\operatorname{sign}(s^{TR}_{i,t}).
 $$
 
-The microprice-pressure filter requires a directional confirmation:
+Mean-reversion mode opens when:
 
 $$
-q_i(t)=+1 \Rightarrow \text{microprice\_pressure}_{i,t} \ge \theta
+p_{i,t} \le p^{MR}_{open}
+\quad\text{and}\quad
+|s^{MR}_{i,t}| \ge c^{MR}_{open}.
 $$
 
-$$
-q_i(t)=-1 \Rightarrow \text{microprice\_pressure}_{i,t} \le -\theta
-$$
-
-where $\theta$ is `min_abs_microprice_pressure`.
-
-## Forecast Z-Score Strategy
-
-`ForecastZScoreStrategy` consumes a forecast panel $\hat{\epsilon}_i(t+1)$ and z-scores the forecast itself:
+The stock-side mean-reversion signal is:
 
 $$
-z^{\text{forecast}}_i(t) =
-\frac{\hat{\epsilon}_i(t+1) - \text{rolling\_mean}_w(\hat{\epsilon}_i)(t)}
-{\text{rolling\_std}_w(\hat{\epsilon}_i)(t)}
+q^{MR}_{i,t}=-\operatorname{sign}(s^{MR}_{i,t}).
 $$
 
-The direct forecast rule is:
+Optional trend confirmation can require minimum trend-line $R^2$ and minimum
+relative volume. The strategy returns a `HybridResidualSignalResult` with:
 
-$$
-q_i(t) =
-\begin{cases}
-+1, & z^{\text{forecast}}_i(t) \ge z_{\text{entry}} \\
--1, & z^{\text{forecast}}_i(t) \le -z_{\text{entry}} \\
-0, & |z^{\text{forecast}}_i(t)| \le z_{\text{exit}} \text{ after a position is open}
-\end{cases}
-$$
+- `signals`: numeric stock-side signals in `{-1, 0, +1}`
+- `modes`: labels `trend`, `mean_reversion`, or `flat`
 
-If `invert_signal=True`, the strategy first maps:
+The strategy does not fit the regime model and does not compute PnL. It only
+converts already-computed transformer/predictor outputs into stock-side
+trading decisions.
 
-$$
-\hat{\epsilon}^{\text{effective}}_i(t+1) = -\hat{\epsilon}_i(t+1)
-$$
+### Choosing The Mean-Reversion Score
 
-This turns a forecast-continuation model into a residual-reversal trading signal. The 15-minute state-space experiment currently uses inverted forecast variants because the initial diagnostics showed the profitable sign was opposite the raw forecast.
+The constructor parameter `mr_score_source` selects which panel of the
+`ResidualStateResult` is used as $s^{MR}$:
 
-`min_hold_bars` prevents immediate exits/reversals, and `allow_reversal=False` forces a position to go flat before switching direction.
+- `"displacement_score"` (default): path z-score of the trailing cumulative
+  residual, $(X_{i,t-1} - \overline{X}_i)/\text{std}(X_i)$ over the level
+  window. Robust because it makes no parametric assumption.
+- `"ou_s_score"`: the Avellaneda--Lee Ornstein--Uhlenbeck s-score
+  $(X_{i,t-1}-\widehat m_i)/\widehat\sigma_{eq,i}$. Requires the upstream
+  `ResidualStateTransformer` to be configured with an `ou_estimator`; raises
+  a `ValueError` otherwise.
+
+The OU s-score is faithful to the source paper but in 2020--2025 tech data
+it was empirically inferior to the path-z-score in three settings
+(MR trigger only, MR trigger + label, classifier feature). The default
+preserves the empirically better choice.

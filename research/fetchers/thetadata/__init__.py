@@ -1,5 +1,6 @@
-"""ThetaData fetcher and downloader package."""
+"""ThetaData data-access and raw-ingestion package."""
 
+from .theta_eod_ingestor import EodIngestionResult, ThetaDataEodIngestor
 from .theta_fetcher import ThetaDataFetcher
 
-__all__ = ["ThetaDataFetcher"]
+__all__ = ["EodIngestionResult", "ThetaDataEodIngestor", "ThetaDataFetcher"]

@@ -1,0 +1,260 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, booktabs}
+\usepackage[hidelinks]{hyperref}
+
+\title{Residual Trend and Mean-Reversion Extension\\
+to the Avellaneda--Lee Daily ETF Replication}
+\author{Thiago Amin}
+\date{May 2026}
+
+\begin{document}
+
+\maketitle
+
+\section{Motivation}
+
+The baseline replication plan in \texttt{replication\_plan.tex} follows the
+Avellaneda--Lee ETF residual strategy: stock returns are decomposed into a
+sector ETF component and an idiosyncratic residual, and trades are opened when
+the residual level is sufficiently far from its estimated equilibrium. This is
+a pure contrarian interpretation of residual displacement. If a stock appears
+expensive relative to its sector ETF, the baseline sells the stock and buys the
+ETF hedge; if it appears cheap, the baseline buys the stock and sells the ETF
+hedge.
+
+That assumption is natural for a paper replication, but it is restrictive in
+post-2020 data. The COVID shock, the rate-hiking cycle, and the artificial
+intelligence repricing created persistent relative trends inside sectors. In
+such environments, a residual that keeps rising may not be temporary noise; it
+may reflect a sustained idiosyncratic repricing. A strategy that mechanically
+fades every large residual can repeatedly short relative winners too early.
+
+This extension keeps the paper's residual framework but changes the trading
+decision. The residual is allowed to be either a mean-reverting displacement
+or a relative trend. The strategy first asks which structure is more plausible,
+and only then decides whether to fade or ride the residual.
+
+\section{Residual Framework}
+
+For stock $i$ assigned to sector ETF $I(i)$, daily returns are decomposed as
+\[
+    R_{i,t}
+    =
+    \beta_{i,t} R_{I(i),t}
+    +
+    \widetilde{R}_{i,t}.
+\]
+The coefficient $\beta_{i,t}$ is estimated from a trailing window using only
+information available before the trading decision. As in the baseline plan,
+the cumulative residual level is
+\[
+    X_{i,t}
+    =
+    \sum_{u \le t} \widetilde{R}_{i,u}.
+\]
+Large positive $X_{i,t}$ means the stock has cumulatively outperformed its
+sector ETF after beta adjustment. Large negative $X_{i,t}$ means it has
+underperformed.
+
+The baseline strategy assumes that $X_{i,t}$ is stationary and mean-reverting.
+This extension treats stationarity as one possible state rather than a
+permanent assumption.
+
+\section{Two Residual States}
+
+\subsection{Mean-Reversion State}
+
+In the mean-reversion state, the residual level is interpreted as a temporary
+relative-value displacement. The OU score from the baseline plan remains the
+decision variable:
+\[
+    s^{MR}_{i,t}
+    =
+    \frac{X_{i,t}-\widehat{m}_{i,t}}
+         {\widehat{\sigma}_{eq,i,t}}.
+\]
+A high positive score indicates that the stock is expensive relative to its
+sector ETF, so the mean-reversion trade is short stock and long ETF. A high
+negative score indicates that the stock is cheap relative to its sector ETF,
+so the trade is long stock and short ETF.
+
+\subsection{Trend State}
+
+In the trend state, a persistent residual move is treated as information
+rather than as a mispricing to fade. Define a trailing residual trend score
+over lookback $L$:
+\[
+    s^{TR}_{i,t}
+    =
+    \frac{X_{i,t}-X_{i,t-L}}
+         {\widehat{\sigma}_{\Delta X,i,t}\sqrt{L}},
+\]
+where $\widehat{\sigma}_{\Delta X,i,t}$ is a trailing volatility estimate of
+daily residual increments. A positive trend score means the stock is
+persistently outperforming its sector ETF. A negative trend score means it is
+persistently underperforming.
+
+The trend trade follows the residual:
+\[
+    s^{TR}_{i,t}>c_{TR}
+    \quad\Rightarrow\quad
+    \text{long stock, short ETF},
+\]
+\[
+    s^{TR}_{i,t}<-c_{TR}
+    \quad\Rightarrow\quad
+    \text{short stock, long ETF}.
+\]
+This is still a relative-value trade. It does not abandon sector hedging; it
+rides idiosyncratic momentum against the sector benchmark.
+
+\section{Regime Decision}
+
+The central extension is a mode selection rule. At each decision date, the
+strategy chooses between:
+\[
+    q^{MR}_{i,t}
+    =
+    -\operatorname{sign}(s^{MR}_{i,t})
+    \quad\text{when } |s^{MR}_{i,t}| \text{ is large and trend is weak},
+\]
+and
+\[
+    q^{TR}_{i,t}
+    =
+    \operatorname{sign}(s^{TR}_{i,t})
+    \quad\text{when } |s^{TR}_{i,t}| \text{ is large and trend is confirmed}.
+\]
+Here $q_{i,t}$ is the stock-side direction: $+1$ means long stock and $-1$
+means short stock. A simple hard-switching rule is
+\[
+    q_{i,t}
+    =
+    \begin{cases}
+    \operatorname{sign}(s^{TR}_{i,t}),
+        & |s^{TR}_{i,t}| \ge c_{TR},\\
+    -\operatorname{sign}(s^{MR}_{i,t}),
+        & |s^{TR}_{i,t}| < c_{TR}
+          \text{ and } |s^{MR}_{i,t}| \ge c_{MR},\\
+    0, & \text{otherwise.}
+    \end{cases}
+\]
+The trend condition is evaluated first. This priority reflects the empirical
+problem that motivates the extension: in strong post-2020 repricing regimes,
+the costly error is often fading a persistent residual too early.
+
+\section{Volume and Information Confirmation}
+
+The source paper reports that ETF residual strategies improve when volume is
+used to distinguish low-volume noise from high-volume information. This idea
+fits naturally into the trend-versus-mean-reversion extension.
+
+Let
+\[
+    \nu_{i,t}
+    =
+    \frac{V_{i,t}}
+         {\overline{V}_{i,t}^{(60)}}
+\]
+be relative volume. A residual move on unusually high volume is treated as
+more likely to contain information. A residual move on ordinary or low volume
+is more likely to be a temporary dislocation.
+
+One implementation is to require trend confirmation:
+\[
+    |s^{TR}_{i,t}| \ge c_{TR}
+    \quad\text{and}\quad
+    \nu_{i,t} \ge c_V.
+\]
+Another implementation is to form a trading-time residual increment:
+\[
+    \widetilde{R}^{TT}_{i,t}
+    =
+    \frac{\widetilde{R}_{i,t}}{\nu_{i,t}^{\phi}},
+    \qquad \phi \ge 0.
+\]
+This reduces the influence of high-volume residual jumps in the
+mean-reversion fit, making the strategy less likely to fade moves that appear
+to be information-driven.
+
+\section{Portfolio Construction}
+
+The portfolio construction remains close to the baseline replication. For
+stock-side signal $q_{i,t}\in\{-1,0,+1\}$ and base stock allocation
+$\Lambda_t$, the stock weight is
+\[
+    w_{i,t} = \Lambda_t q_{i,t}.
+\]
+The sector ETF hedge is
+\[
+    w_{I(j),t}
+    =
+    -\sum_{i:I(i)=I(j)}
+    \widehat{\beta}_{i,t} w_{i,t}.
+\]
+Thus both residual trend trades and residual mean-reversion trades remain
+sector-neutral in the same sense as the paper's ETF strategy. The difference
+is the sign of the stock-side trade, not the definition of factor neutrality.
+
+Net daily PNL is still
+\[
+    \pi_t
+    =
+    w_t^\top R_t
+    -
+    c\left\|w_t-w_{t-1}\right\|_1,
+\]
+with transaction costs charged on position changes.
+
+\section{Diagnostics}
+
+The extension must report performance by trading mode. Aggregate PNL is not
+enough, because the key research question is whether residual trend and
+residual mean reversion work in different states.
+
+For each date and stock, trades should be labeled as one of:
+\[
+    \{\text{trend long},\,
+      \text{trend short},\,
+      \text{mean-reversion long},\,
+      \text{mean-reversion short},\,
+      \text{flat}\}.
+\]
+The backtest should then report:
+\begin{itemize}
+    \item cumulative PNL by mode;
+    \item hit rate by mode;
+    \item average holding period by mode;
+    \item turnover and transaction costs by mode;
+    \item sector contribution by mode; and
+    \item exposure to the assigned ETF after hedging.
+\end{itemize}
+
+If trend-mode PNL dominates, the post-2020 market may be better described by
+relative momentum than by residual convergence. If mean-reversion-mode PNL
+dominates only in calm regimes, then the strategy should gate contrarian
+trades more aggressively. If neither mode works after costs, the residual
+signal itself is not strong enough for the chosen universe and horizon.
+
+\section{Implementation Sequence}
+
+This note should be implemented after the baseline assigned-sector-ETF
+replication is working. The proposed sequence is:
+\begin{enumerate}
+    \item keep the assigned sector ETF residual construction from
+    \texttt{replication\_plan.tex};
+    \item compute residual levels $X_{i,t}$ and OU s-scores as before;
+    \item add residual trend scores over one or more fixed lookbacks;
+    \item add mode labels for trend, mean reversion, and flat states;
+    \item trade with trend priority, then compare against pure mean reversion;
+    \item add volume confirmation or trading-time residuals; and
+    \item report PNL separately by mode before optimizing thresholds.
+\end{enumerate}
+
+The purpose is not to data-mine a better backtest. The purpose is to test a
+specific post-2020 hypothesis: some large residuals represent temporary
+relative-value dislocations, while others represent persistent idiosyncratic
+repricing that should be followed rather than faded.
+
+\end{document}

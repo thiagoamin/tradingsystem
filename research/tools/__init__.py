@@ -1,45 +1,78 @@
 """Research tools package."""
 
-from research.tools.backtest import BacktestEngine
-from research.tools.backtest import SimpleBacktestEngine
-from research.tools.evaluation import BasicStrategyEvaluator, StrategyEvaluator
-from research.tools.experiments import ExperimentConfig, TrainTestSlice, WalkForwardPlan, run_experiment
-from research.tools.predictor import PanelPredictor, RecursiveLeastSquaresResidualPredictor
-from research.tools.processing import (
-    QuoteVariablePanels,
-    ReturnsConfig,
-    TradeVariablePanels,
-    build_quote_variables,
-    build_residual_forecast_features,
-    build_returns,
-    build_trade_variables,
+from research.tools.backtest import BacktestEngine, FactorHedgedBacktestResult, FactorHedgedDailyBacktestEngine
+from research.tools.evaluation import (
+    BasicStrategyEvaluator,
+    HybridModeAttributionEvaluator,
+    ModeAttributionResult,
+    StrategyEvaluator,
 )
-from research.tools.strategy import ForecastZScoreStrategy, PanelStrategy, ResidualVariableStrategy, ResidualZScoreStrategy, Strategy
-from research.tools.transformer import PanelTransformer, Transformer
+from research.tools.experiments import ExperimentConfig, TrainTestSlice, WalkForwardPlan, run_experiment
+from research.tools.predictor import (
+    PanelPredictor,
+    ResidualRegimePredictor,
+    build_residual_regime_target,
+)
+from research.tools.processing import (
+    DailyEodPanels,
+    StockSplit,
+    apply_stock_split_adjustments,
+    build_daily_eod_panels,
+    build_split_adjustment_factors,
+)
+from research.tools.strategy import (
+    HybridResidualSignalResult,
+    HybridResidualStrategy,
+    OUSScoreStrategy,
+    PanelStrategy,
+    Strategy,
+)
+from research.tools.transformer import (
+    FactorOUScoreResult,
+    OUEstimate,
+    OUEstimator,
+    OUScoreResult,
+    PanelTransformer,
+    ResidualStateResult,
+    ResidualStateTransformer,
+    RollingAssignedEtfOUScoreModel,
+    RollingOUScoreModel,
+    Transformer,
+)
 
 __all__ = [
+    "DailyEodPanels",
     "BacktestEngine",
     "BasicStrategyEvaluator",
     "ExperimentConfig",
-    "ForecastZScoreStrategy",
+    "FactorHedgedBacktestResult",
+    "FactorHedgedDailyBacktestEngine",
+    "FactorOUScoreResult",
+    "HybridResidualSignalResult",
+    "HybridResidualStrategy",
+    "HybridModeAttributionEvaluator",
+    "ModeAttributionResult",
+    "OUSScoreStrategy",
     "PanelPredictor",
     "PanelStrategy",
     "PanelTransformer",
-    "QuoteVariablePanels",
-    "RecursiveLeastSquaresResidualPredictor",
-    "ResidualVariableStrategy",
-    "ResidualZScoreStrategy",
-    "ReturnsConfig",
-    "SimpleBacktestEngine",
+    "OUEstimate",
+    "OUEstimator",
+    "OUScoreResult",
+    "ResidualRegimePredictor",
+    "ResidualStateResult",
+    "ResidualStateTransformer",
+    "RollingOUScoreModel",
+    "RollingAssignedEtfOUScoreModel",
+    "StockSplit",
     "Strategy",
     "StrategyEvaluator",
     "Transformer",
-    "TradeVariablePanels",
     "TrainTestSlice",
     "WalkForwardPlan",
-    "build_quote_variables",
-    "build_residual_forecast_features",
-    "build_returns",
-    "build_trade_variables",
+    "apply_stock_split_adjustments",
+    "build_daily_eod_panels",
+    "build_residual_regime_target",
+    "build_split_adjustment_factors",
     "run_experiment",
 ]

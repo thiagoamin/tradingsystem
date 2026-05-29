@@ -1,94 +1,76 @@
 # Processing
 
-This package turns raw market data into aligned research panels.
+This package turns raw market data into aligned research panels. The active
+surface is daily EOD; the intraday processing previously here has been
+removed along with the experiments that consumed it.
 
-Implementation map:
+## Implementation map
 
-- [returns_config.py](/Users/thiagoamin/Desktop/trading_system/research/tools/processing/returns_config.py): deterministic return/window choices.
-- [returns_builder.py](/Users/thiagoamin/Desktop/trading_system/research/tools/processing/returns_builder.py): horizon-aligned return panels from quote midpoint, last trade, or trade VWAP.
-- [quote_variables.py](/Users/thiagoamin/Desktop/trading_system/research/tools/processing/quote_variables.py): quote-derived NBBO variables.
-- [trade_variables.py](/Users/thiagoamin/Desktop/trading_system/research/tools/processing/trade_variables.py): trade-derived variables from trade+quote records.
-- [residual_features.py](/Users/thiagoamin/Desktop/trading_system/research/tools/processing/residual_features.py): per-symbol predictor features from residuals plus market variables.
+- [corporate_actions.py](corporate_actions.py): explicit stock-split
+  adjustment factors for raw daily close panels.
+- [daily_eod.py](daily_eod.py): daily ThetaData EOD raw/split-adjusted
+  close, volume, dollar-volume, and stock/ETF return panels for daily
+  residual models.
 
-The processing layer should not decide positions or PnL. Strategies consume these panels later.
+The processing layer does not decide positions or PnL; the
+[`backtest/`](../backtest/) layer does.
 
-## Quote Variables
+## Daily EOD Price And Volume
 
-For symbol $a$ at bar timestamp $t$, let $b_{a,t}$ be NBBO bid, $a_{a,t}$ be NBBO ask, $B_{a,t}$ be bid size, and $A_{a,t}$ be ask size.
-
-`build_quote_variables(...)` computes:
-
-$$
-m_{a,t} = \frac{a_{a,t} + b_{a,t}}{2}
-$$
-
-$$
-\text{spread\_bps}_{a,t} = 10^4 \frac{a_{a,t} - b_{a,t}}{m_{a,t}}
-$$
+`build_daily_eod_panels(...)` consumes long records from the ThetaData EOD
+ingestion layer, optionally applies a supplied schedule of verified stock
+splits, and separates modeled stock returns from factor-ETF returns. For raw
+close $S_{i,t}$, raw share volume $V_{i,t}$, and split adjustment factor
+$A_{i,t}$, the modelling close is:
 
 $$
-\text{imbalance}_{a,t} = \frac{B_{a,t} - A_{a,t}}{B_{a,t} + A_{a,t}}
+\widetilde{S}_{i,t} = A_{i,t} S_{i,t}.
 $$
 
-$$
-\mu_{a,t} = \frac{a_{a,t}B_{a,t} + b_{a,t}A_{a,t}}{A_{a,t} + B_{a,t}}
-$$
+For a forward split of ratio $k$ effective at date $d$, the factor applied to
+prior raw closes is $1/k$. Share volume is adjusted in the opposite direction
+so price and volume live on the same share basis:
 
 $$
-\text{microprice\_pressure}_{a,t} = \frac{\mu_{a,t} - m_{a,t}}{a_{a,t} - b_{a,t}}
+\widetilde{V}_{i,t} = \frac{V_{i,t}}{A_{i,t}}.
 $$
 
-## Trade Variables
-
-`build_trade_variables(...)` uses ThetaData trade+quote records. Each trade $k$ is signed using the quote midpoint paired to that trade:
+The dollar-volume panel is then:
 
 $$
-\epsilon_{a,k} =
-\begin{cases}
-+1, & p^T_{a,k} \ge m_{a,\tau_k} \\
--1, & p^T_{a,k} < m_{a,\tau_k}
-\end{cases}
+\widetilde{D}_{i,t} = \widetilde{S}_{i,t}\widetilde{V}_{i,t}.
 $$
 
-For trades in bar window $(t-h,t]$, it computes:
+This equals raw close times raw volume when the only adjustment is a stock
+split. The returned log return is:
 
 $$
-\text{trade\_count}_{a,t,h} = \sum_{k \in T_{a,t,h}} 1
+R_{i,t} = \log\left(\frac{\widetilde{S}_{i,t}}{\widetilde{S}_{i,t-1}}\right).
 $$
 
-$$
-\text{trade\_volume}_{a,t,h} = \sum_{k \in T_{a,t,h}} v^T_{a,k}
-$$
+The upstream source is `ThetaClient.stock_history_eod(...)`, exposed through
+[`research/fetchers/thetadata/theta_fetcher.py`](../../fetchers/thetadata/theta_fetcher.py)
+and [`theta_eod_ingestor.py`](../../fetchers/thetadata/theta_eod_ingestor.py).
+The installed ThetaData Python EOD interface supplies OHLCV/BBO records but
+no declared split/dividend-adjusted close field. The daily replication
+supplies an explicit audited split schedule for discontinuities present in
+the raw panel. Cash dividends remain unadjusted, so this is a split-adjusted
+price return panel rather than a full total-return panel.
 
-$$
-\text{dollar\_volume}_{a,t,h} = \sum_{k \in T_{a,t,h}} p^T_{a,k}v^T_{a,k}
-$$
+## Stock-Split Adjustment
 
-$$
-\text{VWAP}_{a,t,h} =
-\frac{\sum_{k \in T_{a,t,h}} p^T_{a,k}v^T_{a,k}}
-{\sum_{k \in T_{a,t,h}} v^T_{a,k}}
-$$
+`apply_stock_split_adjustments(closes, split_events)` returns the
+split-adjusted closes plus the per-symbol-per-date adjustment factor matrix.
+`build_split_adjustment_factors(closes, split_events)` returns just the
+factors; this is what `build_daily_eod_panels` calls internally.
 
-$$
-\text{SVI}_{a,t,h} =
-\frac{\sum_{k \in T_{a,t,h}} \epsilon_{a,k}v^T_{a,k}}
-{\sum_{k \in T_{a,t,h}} v^T_{a,k}}
-$$
+Split events are passed as `tuple[StockSplit, ...]`, each `StockSplit` having
+`symbol`, `effective_date`, `ratio`, and a free-text `source` URL for audit.
+The daily replication's hand-curated schedule lives in
+[`research/experiments/paper_replications/avellaneda_lee_2008/one_day/configured_splits.py`](../../experiments/paper_replications/avellaneda_lee_2008/one_day/configured_splits.py).
 
-$$
-\text{VWAPGap}_{a,t,h} =
-\frac{\text{VWAP}_{a,t,h} - m_{a,t}}{m_{a,t}}
-$$
+## Typical caller
 
-In code, these are named `trade_count`, `trade_volume`, `dollar_volume`, `vwap`, `signed_volume_imbalance`, and `vwap_gap`.
-
-## Current Forecast Features
-
-The active 15-minute residual forecast experiment currently uses:
-
-- residual features: `residual`, `residual_mean`, `residual_vol`
-- quote variables: `spread_bps`, `imbalance`, `microprice_pressure`
-- trade variables: `signed_volume_imbalance`, `vwap_gap`
-
-The processing layer also builds `mid`, `microprice`, `trade_count`, `trade_volume`, `dollar_volume`, and `vwap`, but those are not currently included in the state-space predictor feature set.
+`build_daily_eod_panels` is the only public entry point most users need; it
+is invoked by both data sources in [`../data/`](../data/) and is what
+materializes the on-disk panel cache.

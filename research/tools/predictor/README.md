@@ -22,49 +22,45 @@ The base abstraction is:
 
 Concrete predictors:
 
-- [state_space.py](/Users/thiagoamin/Desktop/trading_system/research/tools/predictor/state_space.py)
-  - `RecursiveLeastSquaresResidualPredictor`
-  - forecasts next-bar residual returns with a state-space style recursive linear model
-  - uses a forgetting factor so recent observations receive more weight
+- [regime.py](regime.py)
+  - `ResidualRegimePredictor`
+  - estimates whether residual trend-following or residual mean-reversion would be favored
+  - uses sklearn classifiers; the default is scaled logistic regression
 
-## Recursive Least Squares Residual Forecast
+## Residual Regime Forecast
 
-For stock $i$, the predictor uses features $x_i(t)$ known at bar $t$ to forecast the next residual:
-
-$$
-\hat{\epsilon}_i(t+1) = \beta_{i,0} + x_i(t)^\top \beta_i
-$$
-
-The active 15-minute experiment uses:
+The regime predictor is used after residual state construction. For stock $i$
+at date $t$, define:
 
 $$
-x_i(t) =
-[
-\epsilon_i(t),
-\text{rolling\_mean}(\epsilon_i)(t),
-\text{rolling\_vol}(\epsilon_i)(t),
-\text{spread\_bps}_i(t),
-\text{imbalance}_i(t),
-\text{microprice\_pressure}_i(t),
-\text{signed\_volume\_imbalance}_i(t),
-\text{vwap\_gap}_i(t)
-]
+d^{TR}_{i,t} = \operatorname{sign}(s^{TR}_{i,t})
 $$
 
-The coefficient vector is updated recursively during `fit(...)`. With forgetting factor $\lambda$, covariance matrix $P_t$, and feature row $\tilde{x}_t = [1, x_t]$, the update is:
+as the trend-following residual direction, and
 
 $$
-K_t = \frac{P_{t-1}\tilde{x}_t}{\lambda + \tilde{x}_t^\top P_{t-1}\tilde{x}_t}
+d^{MR}_{i,t} = -\operatorname{sign}(s^{MR}_{i,t})
 $$
 
-$$
-\beta_t = \beta_{t-1} + K_t(y_t - \tilde{x}_t^\top\beta_{t-1})
-$$
+as the mean-reversion residual direction, where $s^{MR}$ can be represented by
+the residual displacement score. The training label is:
 
 $$
-P_t = \frac{P_{t-1} - K_t\tilde{x}_t^\top P_{t-1}}{\lambda}
+y_{i,t} =
+\begin{cases}
+1, & d^{TR}_{i,t}\widetilde{R}_{i,t}
+     >
+     d^{MR}_{i,t}\widetilde{R}_{i,t} + m,\\
+0, & d^{MR}_{i,t}\widetilde{R}_{i,t}
+     >
+     d^{TR}_{i,t}\widetilde{R}_{i,t} + m,\\
+\text{missing}, & \text{otherwise}.
+\end{cases}
 $$
 
-where $y_t=\epsilon_i(t+1)$ during fitting.
-
-During `predict(...)`, coefficients are fixed. The model does not update on test data, so walk-forward test predictions remain out of sample.
+Here $m \ge 0$ is an optional payoff margin. The model predicts
+$P(y_{i,t}=1 \mid x_{i,t})$, the probability that the residual trend direction
+is preferable to the residual mean-reversion direction. The default estimator is
+`sklearn.pipeline(StandardScaler, LogisticRegression)` with balanced class
+weights. Strategies can later threshold this probability to choose trend,
+mean-reversion, or flat mode.

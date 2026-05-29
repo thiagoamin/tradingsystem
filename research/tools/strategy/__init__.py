@@ -1,12 +1,11 @@
 from research.tools.strategy.base import PanelStrategy, Strategy
-from research.tools.strategy.forecast_zscore import ForecastZScoreStrategy
-from research.tools.strategy.residual_variable import ResidualVariableStrategy
-from research.tools.strategy.residual_zscore import ResidualZScoreStrategy
+from research.tools.strategy.hybrid_residual import HybridResidualSignalResult, HybridResidualStrategy
+from research.tools.strategy.ou_s_score import OUSScoreStrategy
 
 __all__ = [
-    "ForecastZScoreStrategy",
+    "HybridResidualSignalResult",
+    "HybridResidualStrategy",
+    "OUSScoreStrategy",
     "PanelStrategy",
-    "ResidualVariableStrategy",
-    "ResidualZScoreStrategy",
     "Strategy",
 ]

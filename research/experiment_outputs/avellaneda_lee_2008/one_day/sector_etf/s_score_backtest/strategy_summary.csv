@@ -1,0 +1,2 @@
+specification,stock_count,sector_etf_count,window_days,stock_weight,gross_exposure_limit,transaction_cost_bps,hedge_fraction,cum_return,mean_bar_return,bar_vol,sharpe,max_drawdown,hit_rate,turnover,avg_gross_exposure,active_rate,position_change_count,split_adjusted,dividend_adjusted,corporate_action_adjusted
+assigned_sector_etf,25,6,60,0.05,2.0,5.0,1.0,-0.12351055717336301,-9.396196020579415e-05,0.0016477196235730608,-0.9052510239536723,-0.1325768951009958,0.48156182212581344,0.13615924327722406,0.5152720697573705,0.9992769342010123,188.30823345240088,True,False,False

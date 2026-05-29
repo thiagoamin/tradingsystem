@@ -1,0 +1,13 @@
+stock,selected,factor_set,factors,candidate,family,selection_score,fold_id,active_days,mr_probability_entry,mr_entry_score,cum_return,mean_bar_return,bar_vol,sharpe,max_drawdown,hit_rate,turnover,avg_gross_exposure,active_rate,position_change_count
+AAPL,False,flat,,flat,flat,-inf,,,,,,,,,,,,,,
+MSFT,False,flat,,flat,flat,-inf,,,,,,,,,,,,,,
+NVDA,True,SPY_QQQ_XLK,"SPY,QQQ,XLK",mr_p030_s200,mean_reversion,1.094957817297643,8.0,10.0,0.3,2.0,0.00271468500069294,2.227296189570923e-05,0.00032182227976086664,1.0986570261198563,-0.0019375004422687025,0.06557377049180328,0.014796835288852814,0.03305550751559927,0.08196721311475409,1.8052139052400433
+AVGO,False,flat,,flat,flat,-inf,,,,,,,,,,,,,,
+AMD,False,flat,,flat,flat,-inf,,,,,,,,,,,,,,
+ADBE,False,flat,,flat,flat,-inf,,,,,,,,,,,,,,
+CRM,False,flat,,flat,flat,-inf,,,,,,,,,,,,,,
+CSCO,False,flat,,flat,flat,-inf,,,,,,,,,,,,,,
+INTC,False,flat,,flat,flat,-inf,,,,,,,,,,,,,,
+ORCL,False,flat,,flat,flat,-inf,,,,,,,,,,,,,,
+QCOM,True,SPY_QQQ_XLK,"SPY,QQQ,XLK",mr_p035_s125,mean_reversion,3.012455227013444,8.0,10.0,0.35,1.25,0.006260817354853954,5.1195506678536184e-05,0.00026955955906861356,3.014931009310835,-0.0004403914390899155,0.06557377049180328,0.009903129189563676,0.01389682214674379,0.08196721311475409,1.2081817611267684
+TXN,True,SPY_QQQ_XLK,"SPY,QQQ,XLK",mr_p035_s150,mean_reversion,1.5808885853484165,8.0,16.0,0.35,1.5,0.0022591890411078897,1.851433384349115e-05,0.0001857613719551618,1.5821692914195695,-0.0015083605244960996,0.09016393442622951,0.005122824284612218,0.021936606056310096,0.13114754098360656,0.6249845627226907
