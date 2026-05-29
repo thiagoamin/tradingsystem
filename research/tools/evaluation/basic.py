@@ -27,8 +27,16 @@ class BasicStrategyEvaluator(StrategyEvaluator):
         if self.annualization_factor is not None and not np.isnan(sharpe):
             sharpe *= float(np.sqrt(self.annualization_factor))
         turnover = float("nan")
+        avg_gross_exposure = float("nan")
+        active_rate = float("nan")
+        position_change_count = float("nan")
         if positions is not None:
-            turnover = float(positions.diff().abs().sum(axis=1).mean())
+            position_changes = positions.diff().abs().sum(axis=1)
+            gross_exposure = positions.abs().sum(axis=1)
+            turnover = float(position_changes.mean())
+            avg_gross_exposure = float(gross_exposure.mean())
+            active_rate = float((gross_exposure > 0.0).mean())
+            position_change_count = float(position_changes.sum())
         return {
             "cum_return": float(wealth.iloc[-1] - 1.0) if not wealth.empty else float("nan"),
             "mean_bar_return": mean_bar_return,
@@ -37,4 +45,7 @@ class BasicStrategyEvaluator(StrategyEvaluator):
             "max_drawdown": float(drawdown.min()) if not drawdown.empty else float("nan"),
             "hit_rate": float((portfolio_pnl > 0.0).mean()) if not portfolio_pnl.empty else float("nan"),
             "turnover": turnover,
+            "avg_gross_exposure": avg_gross_exposure,
+            "active_rate": active_rate,
+            "position_change_count": position_change_count,
         }

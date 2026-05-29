@@ -1,0 +1,379 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, booktabs}
+\usepackage[hidelinks]{hyperref}
+
+\title{Daily Residual Statistical Arbitrage in Recent Technology Equities\\
+Replication}
+\author{Thiago Amin}
+\date{May 2026}
+
+\begin{document}
+
+\maketitle
+
+\section{Objective and Scope}
+
+Pairs trading begins with the idea that economically similar securities should
+not diverge persistently after accounting for their common exposure. The
+generalized version replaces a single peer stock with one or more factor
+portfolios. A stock is bought when it appears abnormally cheap relative to its
+factor-implied value and sold when it appears abnormally expensive, provided
+the residual behavior is sufficiently consistent with mean reversion.
+
+This replication asks whether that daily residual mean-reversion mechanism is
+detectable in modern U.S. technology equities. The initial study will:
+\begin{itemize}
+    \item operate only at the daily trading frequency;
+    \item use adjusted daily prices and traded ETF factors;
+    \item estimate signals from trailing windows without future information;
+    \item evaluate realized PNL after transaction costs; and
+    \item report results for a recent fixed sample, proposed as January 2019
+    through December 2025.
+\end{itemize}
+
+The first implementation is not intended to establish that daily trading is
+the optimal horizon. It is a single-horizon baseline that can later become one
+component of a multi-horizon allocation study.
+
+\section{Data and Study Universe}
+
+\subsection{Technology Stock Universe}
+
+Let $\mathcal{U}_t$ denote the investable stock universe on trading day $t$.
+The target universe is liquid U.S.-listed technology-sector equities. To avoid
+survivorship bias in a formal replication, membership should be constructed
+from point-in-time holdings of a technology benchmark ETF or another
+point-in-time sector classification. A simplified exploratory implementation
+may begin with a fixed set of liquid technology stocks, but results from that
+variant must be labeled as conditional on the selected universe rather than as
+a survivorship-free sector study.
+
+For each stock $i\in\mathcal{U}_t$, let $S_{i,t}$ be its split- and
+dividend-adjusted closing price. Daily log returns are
+\[
+    R_{i,t} = \log\left(\frac{S_{i,t}}{S_{i,t-1}}\right).
+\]
+Adjusted data are required because a mechanical dividend or split should not
+be interpreted as an idiosyncratic pricing dislocation.
+
+\subsection{Factor Benchmarks}
+
+The primary factor specification follows the paper's interpretable ETF
+approach. Because the trading universe is restricted to technology equities,
+the primary factor is the traded technology-sector benchmark:
+\[
+    F_t = R_{\mathrm{XLK},t}.
+\]
+The stock is therefore assessed relative to the sector portfolio against which
+it is economically comparable.
+
+A pre-specified robustness analysis may use multiple traded benchmark returns,
+for example
+\[
+    F_t =
+    \begin{bmatrix}
+        R_{\mathrm{SPY},t} &
+        R_{\mathrm{XLK},t} &
+        R_{\mathrm{QQQ},t}
+    \end{bmatrix}^{\top}.
+\]
+This specification tests whether separating broad-market, technology-sector,
+and technology-heavy growth exposure materially changes the residual signal.
+Because these ETFs may be highly correlated, the single-factor XLK model
+remains the primary clean replication benchmark.
+
+\section{Residual Relative-Value Model}
+
+\subsection{Factor Decomposition}
+
+For one factor, the daily stock return is decomposed as
+\[
+    R_{i,t}
+    =
+    \alpha_i
+    +
+    \beta_i F_t
+    +
+    \widetilde{R}_{i,t}.
+\]
+The systematic component is $\beta_i F_t$ and
+$\widetilde{R}_{i,t}$ is the idiosyncratic residual return. Under a
+multi-factor specification,
+\[
+    R_{i,t}
+    =
+    \alpha_i
+    +
+    \sum_{j=1}^{m}\beta_{ij}F_{j,t}
+    +
+    \widetilde{R}_{i,t}.
+\]
+The research focus is not solely whether the factors explain return variance;
+it is whether the remaining residual contains a stable and tradable
+mean-reversion signal.
+
+If a dollar exposure $Q_{i,t}$ is taken in stock $i$, the associated
+factor-hedged position takes ETF exposures
+\[
+    Q_{F_j,t} = -\beta_{ij}Q_{i,t},
+    \qquad j=1,\ldots,m.
+\]
+For that stock-level trade, estimated factor exposure is neutral:
+\[
+    \beta_{ij}Q_{i,t} + Q_{F_j,t} = 0.
+\]
+Aggregating these hedged stock trades produces a daily long--short portfolio
+designed to earn residual convergence rather than broad technology-market
+direction.
+
+\subsection{Residual Level}
+
+Let $M$ be the number of observations in the trailing estimation window. In
+line with the source study, the baseline is
+\[
+    M = 60 \text{ business days}.
+\]
+At a decision date $t$, all parameters are estimated using observations ending
+no later than $t-1$. Let $\widehat{\widetilde{R}}_{i,u}$ be the residual return
+from the fitted factor regression for $u=t-M,\ldots,t-1$. Define the cumulative
+residual level over the estimation window by
+\[
+    X_{i,u}
+    =
+    \sum_{v=t-M}^{u}\widehat{\widetilde{R}}_{i,v}.
+\]
+The residual level represents the cumulative relative-value displacement of
+the stock from its factor hedge. A large positive value indicates accumulated
+outperformance relative to the benchmark; a large negative value indicates
+accumulated underperformance.
+
+\section{Mean-Reversion Estimation}
+
+\subsection{Ornstein--Uhlenbeck Specification}
+
+For each stock, the residual level is modeled as an
+Ornstein--Uhlenbeck process:
+\[
+    dX_i(u)
+    =
+    \kappa_i\left(m_i-X_i(u)\right)du
+    +
+    \sigma_i dW_i(u),
+    \qquad \kappa_i>0.
+\]
+Here $m_i$ is the long-run residual equilibrium,
+$\kappa_i$ is the speed of mean reversion, and $\sigma_i$ is residual
+volatility. The conditional expected residual change is
+\[
+    \mathbb{E}_t[dX_i(u)]
+    =
+    \kappa_i\left(m_i-X_i(u)\right)du.
+\]
+Thus a residual above equilibrium predicts negative relative return, while a
+residual below equilibrium predicts positive relative return.
+
+\subsection{Discrete Daily Estimation}
+
+With $\Delta=1/252$ year, the exact daily discretization can be estimated as
+an AR(1) regression:
+\[
+    X_{i,u+\Delta}
+    =
+    a_i + b_i X_{i,u} + \eta_{i,u+\Delta}.
+\]
+The OU interpretation requires
+\[
+    0 < b_i < 1.
+\]
+For an accepted fit, the estimates map to mean-reversion quantities through
+\[
+    \widehat{\kappa}_i
+    =
+    -\frac{\log(\widehat{b}_i)}{\Delta},
+    \qquad
+    \widehat{m}_i
+    =
+    \frac{\widehat{a}_i}{1-\widehat{b}_i}.
+\]
+If $\widehat{\sigma}_{\eta,i}^{\,2}$ is the variance of the AR(1)
+innovation, the estimated equilibrium standard deviation of the residual
+level is
+\[
+    \widehat{\sigma}_{\mathrm{eq},i}
+    =
+    \frac{\widehat{\sigma}_{\eta,i}}
+         {\sqrt{1-\widehat{b}_i^{\,2}}}.
+\]
+
+The estimated characteristic mean-reversion time is
+\[
+    \widehat{\tau}_i = \frac{1}{\widehat{\kappa}_i}.
+\]
+The source strategy restricts trading to residuals that revert sufficiently
+quickly relative to the 60-day estimation window. The baseline eligibility
+rule for this replication will therefore be
+\[
+    \widehat{\tau}_i < \frac{30}{252},
+    \qquad \text{equivalently} \qquad
+    \widehat{\kappa}_i > \frac{252}{30}.
+\]
+Stocks failing this rule, failing the stationary AR(1) restriction, or lacking
+sufficient data are not eligible for a new position on that date.
+
+\section{Trading Signal}
+
+\subsection{S-Score}
+
+The standardized residual displacement at decision date $t$ is
+\[
+    s_{i,t}
+    =
+    \frac{X_{i,t-1}-\widehat{m}_i}
+         {\widehat{\sigma}_{\mathrm{eq},i}}.
+\]
+This score measures how far the stock's factor-relative residual lies from its
+estimated equilibrium in equilibrium-standard-deviation units. The use of
+$X_{i,t-1}$ reflects the implementation convention that a position for day
+$t$ may use only information observable before that day's return is realized.
+
+\subsection{Stateful Entry and Exit Rules}
+
+The baseline daily signal retains the threshold structure reported in the
+source study:
+\[
+\begin{array}{lll}
+    \text{buy stock / sell hedge to open} & \text{if} & s_{i,t} < -1.25,\\
+    \text{sell stock / buy hedge to open} & \text{if} & s_{i,t} > +1.25,\\
+    \text{close short-stock position} & \text{if} & s_{i,t} < +0.75,\\
+    \text{close long-stock position} & \text{if} & s_{i,t} > -0.50.
+\end{array}
+\]
+The strategy is stateful: an entry signal opens a position and the
+corresponding exit rule determines when it is unwound. It is intentionally a
+discrete baseline rather than a continuously scaled function of the s-score,
+so that the replication first tests the source trading mechanism.
+
+\section{Portfolio Construction and PNL}
+
+Let $z_{i,t}\in\{-1,0,+1\}$ denote the active stock-side signal for stock $i$
+on day $t$, where $+1$ is long and $-1$ is short. Let $\Lambda_t$ be the
+dollar amount assigned to each active stock-side position per unit of current
+portfolio equity $E_t$. Stock and hedge dollars are
+\[
+    Q_{i,t}=E_t\Lambda_t z_{i,t},
+    \qquad
+    Q_{F_j,t}
+    =
+    -E_t\Lambda_t
+    \sum_{i\in\mathcal{U}_t}z_{i,t}\widehat{\beta}_{ij,t}.
+\]
+The implementation will choose $\Lambda_t$ so that portfolio gross exposure
+does not exceed a pre-specified budget. Both stock-side and ETF hedge
+exposures must be included in this gross-exposure accounting.
+
+Let $w_t$ denote the complete vector of stock and ETF portfolio weights
+applied over day $t$, and let $R_t$ denote their realized daily return vector.
+With transaction cost rate $c$, daily net PNL in return units is
+\[
+    \pi_t
+    =
+    w_t^{\top}R_t
+    -
+    c\left\|w_t-w_{t-1}\right\|_1.
+\]
+The timing convention is conservative: $w_t$ is fixed using information
+available through day $t-1$ and earns only returns observed on day $t$. To
+connect to the paper, the benchmark transaction-cost setting is
+\[
+    c = 0.0005,
+\]
+or five basis points per dollar of changed position. Results should also be
+reported under lower and higher cost assumptions because modern liquidity and
+implementation quality differ from the historical sample.
+
+\section{Estimation and Backtest Protocol}
+
+For each out-of-sample trading date $t$:
+\begin{enumerate}
+    \item Construct the eligible technology-stock universe using only
+    point-in-time information available at $t$.
+    \item Obtain adjusted daily returns for stocks and factor ETFs through
+    date $t-1$.
+    \item Using the trailing 60 business days, fit the factor regression for
+    each stock and form its residual-level series.
+    \item Fit the AR(1)/OU model and retain only stocks satisfying the
+    stationarity and mean-reversion-time eligibility rules.
+    \item Compute each eligible stock's s-score and update its open or closed
+    position state.
+    \item Construct the corresponding ETF hedges and rescale positions to the
+    gross-exposure limit.
+    \item Apply those positions to the return realized on date $t$, deduct
+    turnover costs, and record net PNL.
+\end{enumerate}
+
+All model fitting and signal construction are rolling and out of sample. The
+choice of universe, factors, 60-day window, thresholds, exposure budget, and
+transaction-cost assumptions must be fixed before inspecting performance in
+the test period. If alternative thresholds or factor sets are explored, they
+will be reported as separate specifications rather than silently chosen from
+the best backtest result.
+
+\section{Results To Report}
+
+The eventual implementation report should include:
+\begin{itemize}
+    \item universe construction and daily counts of eligible/traded stocks;
+    \item factor specification and distributions of estimated factor loadings;
+    \item distributions of $\widehat{\kappa}_i$,
+    $\widehat{\tau}_i$, and s-scores;
+    \item number of entries, exits, average holding period, and turnover;
+    \item cumulative net PNL, annualized volatility, annualized Sharpe ratio,
+    maximum drawdown, and hit rate;
+    \item average long gross, short gross, hedge gross, net exposure, and
+    factor exposure after hedging;
+    \item transaction-cost sensitivity; and
+    \item comparison of the primary XLK factor model against pre-specified
+    factor robustness variants.
+\end{itemize}
+
+\section{Secondary Replication Extension: PCA Factors}
+
+The original study also extracts systematic returns through principal
+components. This is a useful second-stage replication, but it is not required
+for the initial ETF implementation. For a trailing window, standardized stock
+returns can be collected in a matrix $Y$ and the empirical correlation matrix
+formed as
+\[
+    \rho = \frac{1}{M-1}YY^{\top}.
+\]
+If $v^{(1)},\ldots,v^{(k)}$ are eigenvectors corresponding to the retained
+largest eigenvalues, their associated eigenportfolio returns become estimated
+factors. The residual/OU/s-score/backtest procedure then remains unchanged;
+only the source of the systematic factor returns changes. Comparing ETF and
+PCA specifications within the same recent technology universe will test
+whether the residual strategy is sensitive to how systematic technology risk
+is extracted.
+
+\section{Implementation Sequence}
+
+\begin{enumerate}
+    \item Implement adjusted daily price and ETF return ingestion.
+    \item Implement point-in-time technology universe construction, with any
+    simplified fixed-universe fallback clearly labeled.
+    \item Implement rolling ETF regression residualization.
+    \item Implement OU parameter estimation, eligibility screening, and
+    s-score computation.
+    \item Implement stateful factor-hedged positions, exposure limits, and
+    transaction-cost-adjusted PNL.
+    \item Produce the tables and plots specified above.
+    \item Only after the daily replication is established, expose this strategy
+    as a one-day sleeve for the endogenous-horizon study.
+\end{enumerate}
+
+\section*{Source Study}
+
+Marco Avellaneda and Jeong-Hyun Lee,
+\emph{Statistical Arbitrage in the U.S. Equities Market}, July 11, 2008,
+SSRN abstract 1153505. 
+\end{document}

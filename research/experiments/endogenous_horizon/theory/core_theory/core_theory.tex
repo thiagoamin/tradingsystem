@@ -1,0 +1,226 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{amsmath, amssymb}
+
+\title{Trading Horizon as Endogenous Decision}
+\author{Thiago, Phi}
+\date{May 2026}
+
+\begin{document}
+
+\maketitle
+
+\section{Theory}
+
+\subsection{Trading Horizon as an Endogenous Decision}
+
+Consider an investor trading a collection of assets indexed by
+$i \in \{1, \ldots, N\}$. At any decision time $t$, the investor may
+express a position over one of several admissible trading horizons. Let
+$
+    \mathcal{H} = \{h_1, h_2, \ldots, h_K\}
+$
+denote a finite, discrete set of horizons. A horizon is not just a
+sampling convention, it defines the interval over which a trading
+decision is intended to earn a return and over which its risk and
+implementation cost are realized.
+
+For each horizon $h \in \mathcal{H}$, let
+$q_{i,t}^{(h)} \in [-1,1]$ denote the signed fraction of the capital
+assigned to horizon $h$ that is exposed to asset $i$ at time $t$.
+Positive values represent long positions and negative values represent
+short positions. Thus the choice is real-valued: the investor may assign
+partial long or short exposure to an asset rather than making only an
+all-or-nothing decision.
+
+The investor has finite available capital, normalized to one. Let
+$a_{h,t} \in [0,1]$ denote the fraction of total capital allocated to
+trading decisions at horizon $h$. Capital allocations must satisfy
+
+\[
+    \sum_{h \in \mathcal{H}} a_{h,t} \leq 1,
+    \qquad
+    \sum_{i=1}^{N} \left|q_{i,t}^{(h)}\right| \leq 1
+    \quad \text{for each } h \in \mathcal{H}.
+\]
+
+The absolute-value restriction bounds gross exposure within each
+horizon allocation, allowing offsetting long and short positions without
+implicitly permitting unlimited leverage. Any unallocated share may be
+understood as capital held outside the risky positions. The construction
+of the candidate exposures is left unrestricted at this stage. The
+resulting signed fraction of total capital exposed to asset $i$ is
+
+\[
+    Q_{i,t} = \sum_{h \in \mathcal{H}} a_{h,t} q_{i,t}^{(h)}.
+\]
+
+Let $r_{i,t,t+h}$ be the return of asset $i$ over the interval associated
+with horizon $h$, and let $C_{t,t+h}^{(h)}$ represent the costs incurred
+by implementing the corresponding horizon-specific allocation. The net
+payoff attributable to horizon $h$ is
+
+\[
+    \Pi_{t,t+h}^{(h)}
+    =
+    a_{h,t}
+    \sum_{i=1}^{N} q_{i,t}^{(h)} r_{i,t,t+h}
+    -
+    C_{t,t+h}^{(h)}.
+\]
+
+Therefore the investor's decision is not only which assets to trade,
+but also which trading horizons should receive capital. Distinct
+horizons may offer different expected payoffs, risks, costs, and
+dependence with one another. An allocation that ignores the horizon
+dimension implicitly assumes that the same trading window is always
+appropriate, or that the relative value of alternative windows is
+constant.
+
+The basic hypothesis of this framework is that trading horizon is an
+endogenous portfolio choice. Conditional on the information available
+at time $t$, the allocation vector
+$
+    a_t = (a_{h,t})_{h \in \mathcal{H}}
+$
+is chosen jointly with the real-valued asset exposure choices, subject
+to the investor's finite capital and risk constraints. The objective is to allocate exposure to
+the set of horizon-specific opportunities that provides the most
+attractive net risk-adjusted payoff. 
+
+\subsection{Decision Times and Overlapping Horizon Positions}
+
+Let $\delta>0$ denote the shortest interval at which the investor may
+revise the portfolio. Decision times lie on the common grid
+$
+    \mathcal{T}
+    =
+    \{t_0+n\delta:n=0,1,\ldots,M\}.
+$
+The admissible horizons are aligned with this grid:
+$
+    \mathcal{H} \subseteq \{m\delta:m\in\mathbb{N}\}.
+$
+Consequently, for every $t\in\mathcal{T}$ and every
+$h\in\mathcal{H}$, both the initiation time $t$ and the maturity time
+$t+h$ lie on the investor's decision grid.
+
+At each decision time $t$, the investor may initiate a new position for
+every admissible horizon, including a new longer-horizon position even
+when earlier positions at that same horizon remain active. Define the
+newly initiated signed exposure to asset $i$ for the position vintage
+$(t,h)$ as
+$
+    x_{i,t}^{(h)} = a_{h,t}q_{i,t}^{(h)}.
+$
+A vintage initiated at time $t$ for horizon $h$ remains active until
+$t+h$. Thus, positions initiated at different decision times can have
+overlapping payoff intervals and distinct maturity times. At any
+decision time $s\in\mathcal{T}$, total active exposure to asset $i$ is
+\[
+    Q_{i,s}
+    =
+    \sum_{h \in \mathcal{H}}
+    \sum_{\substack{t \in \mathcal{T} \\ t \leq s < t+h}}
+    x_{i,t}^{(h)}.
+\]
+
+Two notions of capacity are relevant when horizon-specific positions
+overlap. First, let $G^{\mathrm{exec}}>0$ denote the admissible gross
+exposure of the position actually executed in the market after active
+vintages are netted within each asset. Feasible executed exposure
+satisfies
+\[
+    \sum_{i=1}^{N} \left|Q_{i,s}\right| \leq G^{\mathrm{exec}},
+    \qquad s \in \mathcal{T}.
+\]
+Second, let $B^{\mathrm{commit}}>0$ denote the permitted aggregate
+commitment to all active horizon-specific decisions before netting.
+This is not a broker-level capital constraint; it is an overlap-control
+restriction that limits simultaneous, potentially conflicting,
+horizon-specific exposure. Active decisions must satisfy
+\[
+    \sum_{i=1}^{N}
+    \sum_{h \in \mathcal{H}}
+    \sum_{\substack{t \in \mathcal{T} \\ t \leq s < t+h}}
+    \left|x_{i,t}^{(h)}\right|
+    \leq B^{\mathrm{commit}},
+    \qquad s \in \mathcal{T}.
+\]
+With normalized capital and no leverage, $G^{\mathrm{exec}}$ may be set
+to one; $B^{\mathrm{commit}}$ is chosen as a separate modeling limit.
+The two restrictions serve different purposes: the first limits the
+broker-level portfolio after offsetting positions are combined, while
+the second prevents opposing position vintages from being added without
+limit merely because they net to a small executed exposure.
+Thus overlapping horizon decisions do not provide new capital. A
+position associated with a longer horizon continues to consume active
+decision commitment capacity when newer decisions are made.
+
+\subsection{The Dynamic Allocation Problem}
+
+Let $W_t$ denote investor wealth immediately before the decision at time
+$t$, and let
+$
+    x_t =
+    \left(x_{i,t}^{(h)}\right)_
+    {\substack{i=1,\ldots,N \\ h \in \mathcal{H}}}
+$
+collect the new horizon-specific exposures selected at that time. The
+investor chooses $x_t$ conditional on the information available at
+$t$ and on all position vintages that remain active from earlier
+decisions. In particular, $x_t$ may include a newly initiated
+longer-horizon position even if positions with the same horizon were
+initiated at earlier decision times and have not yet matured.
+In general form, the decision problem is
+\[
+    x_t^*
+    \in
+    \underset{x_t \in \mathcal{A}_t}{\operatorname{arg\,max}}
+    \left\{
+        \mathbb{E}_t\!\left[\Delta W(x_t)\right]
+        -
+        \gamma \mathcal{R}_t(x_t)
+        -
+        \mathcal{C}_t(x_t;Q_t^{\mathrm{existing}})
+    \right\},
+\]
+where $\mathbb{E}_t[\Delta W(x_t)]$ is the conditional expected payoff
+from the decision, $\mathcal{R}_t(x_t)$ is its risk contribution,
+$\mathcal{C}_t(x_t;Q_t^{\mathrm{existing}})$ is the implementation and
+adjustment cost given the existing portfolio, and $\gamma \geq 0$
+controls risk aversion.
+
+The feasible set enforces both capacity constraints after combining the
+new decision with active exposures. Let
+$\mathcal{V}_t^{\mathrm{existing}}$ be the set of position vintages
+initiated prior to $t$ that have not matured. Then
+\[
+    \mathcal{A}_t
+    =
+    \left\{
+        x_t :
+        \sum_{i=1}^{N}
+        \left|
+            Q_{i,t}^{\mathrm{existing}}
+            +
+            \sum_{h \in \mathcal{H}}x_{i,t}^{(h)}
+        \right|
+        \leq G^{\mathrm{exec}},
+        \quad
+        \sum_{i=1}^{N}
+        \left(
+            \sum_{(\tau,h)\in\mathcal{V}_t^{\mathrm{existing}}}
+            \left|x_{i,\tau}^{(h)}\right|
+            +
+            \sum_{h\in\mathcal{H}}\left|x_{i,t}^{(h)}\right|
+        \right)
+        \leq B^{\mathrm{commit}}
+    \right\}.
+\]
+The investor may consequently revise the allocation across trading
+horizons at every decision time, but only within the portfolio's
+executed-exposure and active-decision commitment limits and after
+accounting for active positions, risk, and adjustment cost.
+
+\end{document}
