@@ -1,1 +1,0 @@
-research/fetchers/thetadata/creds.txt
