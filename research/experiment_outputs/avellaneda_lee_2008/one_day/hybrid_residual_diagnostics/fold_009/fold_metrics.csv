@@ -1,2 +1,0 @@
-fold_id,train_start,train_end,test_start,test_end,fitted_symbol_count,cum_return,mean_bar_return,bar_vol,sharpe,max_drawdown,hit_rate,turnover,avg_gross_exposure,active_rate,position_change_count,trend_cells,mean_reversion_cells,flat_cells
-9,2022-03-07,2024-02-08,2024-02-09,2024-05-07,12,-0.015026151713167013,-0.000247064810905951,0.0014978449225759515,-2.6184501647133605,-0.015987990322176238,0.4098360655737705,0.04226860811942161,0.1639933237177209,0.9672131147540983,2.5783850952847183,4,146,582

@@ -1,3 +1,0 @@
-specification,window_days,max_mean_reversion_days,score_rows,stock_score_observations,eligible_stock_days,split_adjusted,dividend_adjusted,corporate_action_adjusted
-primary_xlk,60,30.0,1383,16197,14041,True,False,False
-robustness_spy_xlk_qqq,60,30.0,1383,16176,14023,True,False,False

@@ -1,2 +1,0 @@
-experiment,num_folds,selection_objective,min_validation_active_days,min_validation_active_rate,turnover_penalty,allowed_candidate_families,cum_return,mean_bar_return,bar_vol,sharpe,max_drawdown,hit_rate,turnover,avg_gross_exposure,active_rate,position_change_count
-hybrid_residual_stock_factor_feature_tuning,17,sharpe,10,0.05,0.25,mean_reversion,0.026087579350069,2.5610147928743786e-05,0.0008510586196531837,0.4776974057555109,-0.015923708471253906,0.3,0.04187776543398991,0.11356644334897119,0.6058823529411764,42.71532074266971

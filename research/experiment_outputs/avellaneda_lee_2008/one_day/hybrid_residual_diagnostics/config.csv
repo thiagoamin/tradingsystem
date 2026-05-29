@@ -1,2 +1,0 @@
-start_date,end_date,factor,residual_window_days,state_level_window,state_trend_window,state_volatility_window,state_volume_window,train_window_days,test_window_days,step_days,min_regime_obs,min_target_score,stock_weight,transaction_cost_bps,gross_exposure_limit,hedge_fraction,residual_volatility_target,max_position_multiplier,portfolio_vol_target,portfolio_vol_lookback,max_portfolio_scale,enable_ou_score,ou_max_mean_reversion_days
-2020-01-02,2025-12-31,XLK,60,60,20,20,60,504,63,63,150,0.25,0.05,5.0,2.0,1.0,,3.0,,20,15.0,False,30.0

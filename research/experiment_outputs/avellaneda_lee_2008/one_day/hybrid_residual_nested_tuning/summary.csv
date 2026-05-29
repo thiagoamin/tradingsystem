@@ -1,2 +1,0 @@
-experiment,num_folds,selection_objective,min_validation_active_rate,cum_return,mean_bar_return,bar_vol,sharpe,max_drawdown,hit_rate,turnover,avg_gross_exposure,active_rate,position_change_count
-hybrid_residual_nested_tuning,17,sharpe,0.03,0.025660748361333585,2.50651535869351e-05,0.0006700874246668683,0.5937986046907631,-0.014559841366613702,0.1980392156862745,0.019778804908883146,0.037668691729418655,0.35980392156862745,20.17438100706081

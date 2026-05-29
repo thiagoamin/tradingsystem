@@ -1,3 +1,0 @@
-specification,factors,window_days,output_rows,complete_residual_rows,split_adjusted,dividend_adjusted,corporate_action_adjusted
-primary_xlk,XLK,60,1446,1446,True,False,False
-robustness_spy_xlk_qqq,"SPY,XLK,QQQ",60,1446,1446,True,False,False
