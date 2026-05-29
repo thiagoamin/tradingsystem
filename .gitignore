@@ -24,3 +24,13 @@ research/raw_data_cache/
 research/experiment_outputs/
 
 *.egg-info/
+# LaTeX build artifacts
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+
+creds.txt
