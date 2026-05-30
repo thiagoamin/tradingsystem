@@ -24,6 +24,8 @@ research/raw_data_cache/
 research/experiment_outputs/
 
 *.egg-info/
+creds.txt
+creds.local.txt
 # LaTeX build artifacts
 *.aux
 *.fdb_latexmk
