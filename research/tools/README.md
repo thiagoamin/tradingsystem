@@ -24,6 +24,7 @@ constructor argument, not an edit.
 
 | Package | Role | README |
 |---|---|---|
+| [`contracts/`](contracts/) | Declarative contracts for data, variables, components, strategy dependencies, and runtime validation. | [README](contracts/README.md) |
 | [`data/`](data/) | `DataSource` ABC. `CachedPanelSource`, `ThetaPanelSource`, `LayeredPanelSource`. Returns `DailyEodPanels`. | [README](data/README.md) |
 | [`processing/`](processing/) | Daily EOD record -> `DailyEodPanels`. Stock-split adjustment. | [README](processing/README.md) |
 | [`transformer/`](transformer/) | Panel -> panel. Residualization, residual-state features, OU estimation. | [README](transformer/README.md) |
