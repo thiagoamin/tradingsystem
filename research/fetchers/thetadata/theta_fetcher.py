@@ -156,6 +156,35 @@ class ThetaDataFetcher:
             date_args=date_args,
         )
 
+    def fetch_stock_eod(self, symbol: str, start_date: date, end_date: date) -> DataFrameLike:
+        """Fetch generated stock end-of-day OHLCV records.
+
+        Wraps ``ThetaClient.stock_history_eod(...)``. ThetaData's EOD response
+        contains daily OHLCV/BBO fields; this method does not apply or claim
+        corporate-action adjustment.
+
+        Reference:
+        https://docs.thetadata.us/operations_python/stock_history_eod.html
+
+        Args:
+            symbol: Stock or ETF symbol (normalized to uppercase).
+            start_date: Date range start, inclusive.
+            end_date: Date range end, inclusive.
+
+        Returns:
+            A pandas or polars DataFrame; empty dataframe when no data is returned.
+            Long ranges are split into ThetaData-compliant chunks and combined.
+
+        Raises:
+            ValueError: If ``start_date`` is after ``end_date``.
+            TypeError: If ThetaData returns an unexpected response type.
+        """
+        if start_date > end_date:
+            raise ValueError("start_date must be less than or equal to end_date.")
+        return self._fetch_eod_range(
+            symbol=symbol.upper(), start_date=start_date, end_date=end_date
+        )
+
     def _validate_venue(self, venue: str) -> str:
         """Validate venue against supported ThetaData stock-trade venues."""
         if venue not in self._VALID_VENUES:
@@ -295,6 +324,16 @@ class ThetaDataFetcher:
             ),
         )
 
+    def _fetch_eod_range(self, symbol: str, start_date: date, end_date: date) -> DataFrameLike:
+        """Fetch EOD history in chunks accepted by ThetaData's 365-day limit."""
+        results = [
+            self._execute_request(
+                lambda chunk=chunk: self.client.stock_history_eod(symbol=symbol, **chunk)
+            )
+            for chunk in self._iter_day_chunks(start_date=start_date, end_date=end_date, max_days=365)
+        ]
+        return self._concat_results(results)
+
     def _fetch_chunked(
         self,
         date_args: dict[str, date],
@@ -326,6 +365,18 @@ class ThetaDataFetcher:
         while chunk_start <= end_date:
             month_end = self._month_end(chunk_start)
             chunk_end = month_end if month_end <= end_date else end_date
+            chunks.append({"start_date": chunk_start, "end_date": chunk_end})
+            chunk_start = chunk_end + timedelta(days=1)
+        return chunks
+
+    def _iter_day_chunks(self, start_date: date, end_date: date, max_days: int) -> list[dict[str, date]]:
+        """Return inclusive date ranges containing no more than ``max_days`` dates."""
+        if max_days < 1:
+            raise ValueError("max_days must be >= 1")
+        chunks: list[dict[str, date]] = []
+        chunk_start = start_date
+        while chunk_start <= end_date:
+            chunk_end = min(chunk_start + timedelta(days=max_days - 1), end_date)
             chunks.append({"start_date": chunk_start, "end_date": chunk_end})
             chunk_start = chunk_end + timedelta(days=1)
         return chunks
