@@ -574,7 +574,7 @@ def _write_summary_txt(
     lines = [
         "Hybrid residual nested walk-forward tuning",
         "",
-        "No-leakage contract: candidates are selected on each fold's inner validation window, then evaluated once on the outer test window.",
+        "No-leakage design: candidates are selected on each fold's inner validation window, then evaluated once on the outer test window.",
         "",
         "Overall summary:",
         summary.to_string(index=False),

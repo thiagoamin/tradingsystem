@@ -3,6 +3,7 @@
 from research.tools.contracts import (
     ComponentContract,
     DataRequirement,
+    ExperimentContract,
     StrategyContract,
     StrategyRunContext,
     VariableSpec,
@@ -14,7 +15,14 @@ from research.tools.evaluation import (
     ModeAttributionResult,
     StrategyEvaluator,
 )
-from research.tools.experiments import ExperimentConfig, TrainTestSlice, WalkForwardPlan, run_experiment
+from research.tools.experiments import (
+    ExperimentConfig,
+    ExperimentRunManifest,
+    FoldRecord,
+    TrainTestSlice,
+    WalkForwardPlan,
+    run_experiment,
+)
 from research.tools.predictor import (
     PanelPredictor,
     ResidualRegimePredictor,
@@ -33,6 +41,7 @@ from research.tools.strategy import (
     OUSScoreStrategy,
     PanelStrategy,
     Strategy,
+    hybrid_residual_strategy_contract,
 )
 from research.tools.transformer import (
     FactorOUScoreResult,
@@ -54,8 +63,11 @@ __all__ = [
     "DailyEodPanels",
     "DataRequirement",
     "ExperimentConfig",
+    "ExperimentContract",
+    "ExperimentRunManifest",
     "FactorHedgedBacktestResult",
     "FactorHedgedDailyBacktestEngine",
+    "FoldRecord",
     "FactorOUScoreResult",
     "HybridModeAttributionEvaluator",
     "HybridResidualSignalResult",
@@ -86,5 +98,6 @@ __all__ = [
     "build_daily_eod_panels",
     "build_residual_regime_target",
     "build_split_adjustment_factors",
+    "hybrid_residual_strategy_contract",
     "run_experiment",
 ]

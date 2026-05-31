@@ -7,9 +7,12 @@ from research.tools.experiments.core import (
     resolve_test_start_date,
     run_experiment,
 )
+from research.tools.experiments.manifest import ExperimentRunManifest, FoldRecord
 
 __all__ = [
     "ExperimentConfig",
+    "ExperimentRunManifest",
+    "FoldRecord",
     "Mode",
     "TrainTestSlice",
     "WalkForwardPlan",
