@@ -34,7 +34,7 @@ constructor argument, not an edit.
 | [`splits/`](splits/) | Train/test partitioner. Walk-forward, nested walk-forward, single, expanding. | [README](splits/README.md) |
 | [`metrics/`](metrics/) | Composable `Metric` + `MetricSet`. Wraps the underlying evaluators. | [README](metrics/README.md) |
 | [`evaluation/`](evaluation/) | Underlying evaluators: headline + hybrid mode attribution. | [README](evaluation/README.md) |
-| [`experiments/`](experiments/) | Legacy callback-based runner. Predates `splits/` + `metrics/`; kept for back-compat. | [README](experiments/README.md) |
+| [`experiments/`](experiments/) | Legacy callback-based runner plus run manifests for realized fold windows, metrics, and artifacts. | [README](experiments/README.md) |
 | [`live/`](live/) | Event-driven runtime for live and paper trading. Sibling to the batch backtest engine. | [README](live/README.md) |
 | [`transformer/mean_reversion/`](transformer/mean_reversion/) | `OUEstimator`, paper-style assigned-ETF OU score model. | [README](transformer/mean_reversion/README.md) |
 | [`transformer/residual_state/`](transformer/residual_state/) | Causal state features (level, trend, displacement, OU s-score, volume). | [README](transformer/residual_state/README.md) |

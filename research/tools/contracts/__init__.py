@@ -1,7 +1,8 @@
-"""Declarative contracts for data, variables, components, and strategies."""
+"""Declarative contracts for data, variables, components, strategies, and experiments."""
 
 from research.tools.contracts.components import ComponentContract, ComponentKind
 from research.tools.contracts.data import DataRequirement, RequirementUse
+from research.tools.contracts.experiment import ExperimentContract, ExperimentMode
 from research.tools.contracts.runtime import StrategyRunContext
 from research.tools.contracts.strategy import StrategyContract
 from research.tools.contracts.variables import VariableRole, VariableSpec, VariableTiming
@@ -10,6 +11,8 @@ __all__ = [
     "ComponentContract",
     "ComponentKind",
     "DataRequirement",
+    "ExperimentContract",
+    "ExperimentMode",
     "RequirementUse",
     "StrategyContract",
     "StrategyRunContext",

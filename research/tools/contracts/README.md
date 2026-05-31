@@ -17,6 +17,9 @@ components, and outputs required to train and run.
 - `StrategyContract`: full declarative dependency contract for one strategy.
 - `StrategyRunContext`: concrete runtime data and variables validated against a
   contract.
+- `ExperimentContract`: reproducibility contract for one concrete evaluation of
+  a strategy: universe, factors, date range, split policy, retraining cadence,
+  objective, costs, metrics, and expected artifacts.
 
 ## Example
 
@@ -81,6 +84,38 @@ ctx = StrategyRunContext(
     },
 )
 ctx.validate(contract, mode="inference")
+```
+
+Strategy contracts and experiment contracts intentionally answer different
+questions:
+
+- `StrategyContract`: what does this strategy need to train or run?
+- `ExperimentContract`: how exactly did we test that strategy?
+- `ExperimentRunManifest` in [`../experiments/`](../experiments/) records what
+  actually happened after a run: realized folds, retraining, selected params,
+  metrics, and artifacts.
+
+```python
+from datetime import date
+
+from research.tools.contracts import ExperimentContract
+
+experiment = ExperimentContract(
+    name="hybrid_residual_nested_tuning",
+    strategy=contract,
+    start_date=date(2019, 1, 2),
+    end_date=date(2024, 12, 31),
+    universe=("AAPL", "MSFT", "NVDA"),
+    factors=("XLK",),
+    mode="walk_forward",
+    horizons=("1d",),
+    train_window_days=504,
+    test_window_days=63,
+    step_days=63,
+    retrain_every_n_folds=1,
+    selection_objective="sharpe",
+    transaction_cost_bps=5.0,
+)
 ```
 
 ## Design Rule

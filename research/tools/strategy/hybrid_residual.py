@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
+from research.tools.contracts import ComponentContract, DataRequirement, StrategyContract, VariableSpec
 from research.tools.strategy.base import Strategy
 from research.tools.transformer.residual_state import ResidualStateResult
 
@@ -22,6 +23,188 @@ class HybridResidualSignalResult:
 
     signals: pd.DataFrame
     modes: pd.DataFrame
+
+
+def hybrid_residual_strategy_contract() -> StrategyContract:
+    """Return the declarative pipeline contract for the daily hybrid residual strategy."""
+    return StrategyContract(
+        name="daily_hybrid_residual",
+        description=(
+            "Daily factor-residual strategy that chooses mean-reversion, inverse-trend, "
+            "or flat states from residual state features and regime probabilities."
+        ),
+        frequency="1d",
+        data_requirements=(
+            DataRequirement(
+                name="daily_eod",
+                domain="market",
+                kind="eod",
+                source="thetadata",
+                fields=("close", "volume"),
+                frequency="1d",
+                scope="stocks_and_factor_etfs",
+                required_for="train_and_inference",
+                description="Daily close and volume panel for stocks and factor ETFs.",
+            ),
+        ),
+        variables=(
+            VariableSpec(
+                name="daily_returns",
+                role="feature",
+                frequency="1d",
+                scope="stocks_and_factor_etfs",
+                timing="t_minus_1",
+                producer="daily_eod_processor",
+            ),
+            VariableSpec(
+                name="rolling_residuals",
+                role="feature",
+                frequency="1d",
+                scope="stocks",
+                timing="t_minus_1",
+                required_inputs=("daily_returns",),
+                producer="residualizer",
+            ),
+            VariableSpec(
+                name="factor_betas",
+                role="risk_input",
+                frequency="1d",
+                scope="stocks_by_factor",
+                timing="t_minus_1",
+                required_inputs=("daily_returns",),
+                producer="residualizer",
+            ),
+            VariableSpec(
+                name="residual_state",
+                role="feature",
+                frequency="1d",
+                scope="stocks",
+                timing="t_minus_1",
+                required_inputs=("rolling_residuals",),
+                producer="residual_state_transformer",
+            ),
+            VariableSpec(
+                name="residual_volatility",
+                role="risk_input",
+                frequency="1d",
+                scope="stocks",
+                timing="t_minus_1",
+                required_inputs=("rolling_residuals",),
+                producer="residual_state_transformer",
+            ),
+            VariableSpec(
+                name="regime_target",
+                role="target",
+                frequency="1d",
+                scope="stocks",
+                timing="t_minus_1",
+                required_inputs=("rolling_residuals", "residual_state"),
+                producer="regime_target_builder",
+            ),
+            VariableSpec(
+                name="regime_probabilities",
+                role="signal_input",
+                frequency="1d",
+                scope="stocks",
+                timing="same_time",
+                required_inputs=("residual_state",),
+                producer="regime_predictor",
+            ),
+            VariableSpec(
+                name="stock_signals",
+                role="output",
+                frequency="1d",
+                scope="stocks",
+                timing="same_time",
+                required_inputs=("residual_state", "regime_probabilities"),
+                producer="hybrid_residual_strategy",
+            ),
+            VariableSpec(
+                name="signal_modes",
+                role="output",
+                frequency="1d",
+                scope="stocks",
+                timing="same_time",
+                required_inputs=("residual_state", "regime_probabilities"),
+                producer="hybrid_residual_strategy",
+            ),
+            VariableSpec(
+                name="target_weights",
+                role="output",
+                frequency="1d",
+                scope="stocks_and_factor_etfs",
+                timing="same_time",
+                required_inputs=("stock_signals", "factor_betas", "residual_volatility"),
+                producer="factor_hedged_backtest",
+            ),
+            VariableSpec(
+                name="portfolio_pnl",
+                role="output",
+                frequency="1d",
+                scope="portfolio",
+                timing="same_time",
+                required_inputs=("target_weights", "daily_returns"),
+                producer="factor_hedged_backtest",
+            ),
+        ),
+        components=(
+            ComponentContract(
+                name="daily_eod_processor",
+                kind="processor",
+                produces=("daily_returns",),
+                description="Builds daily close/volume/return panels from EOD records.",
+            ),
+            ComponentContract(
+                name="residualizer",
+                kind="transformer",
+                consumes=("daily_returns",),
+                produces=("rolling_residuals", "factor_betas"),
+                fit_required=True,
+            ),
+            ComponentContract(
+                name="residual_state_transformer",
+                kind="transformer",
+                consumes=("rolling_residuals",),
+                produces=("residual_state", "residual_volatility"),
+            ),
+            ComponentContract(
+                name="regime_target_builder",
+                kind="processor",
+                consumes=("rolling_residuals", "residual_state"),
+                produces=("regime_target",),
+            ),
+            ComponentContract(
+                name="regime_predictor",
+                kind="predictor",
+                consumes_train=("residual_state", "regime_target"),
+                consumes_inference=("residual_state",),
+                produces=("regime_probabilities",),
+                fit_required=True,
+            ),
+            ComponentContract(
+                name="hybrid_residual_strategy",
+                kind="strategy",
+                consumes_inference=("residual_state", "regime_probabilities"),
+                produces=("stock_signals", "signal_modes"),
+            ),
+            ComponentContract(
+                name="factor_hedged_backtest",
+                kind="backtest",
+                consumes=("daily_returns", "stock_signals", "factor_betas", "residual_volatility"),
+                produces=("target_weights", "portfolio_pnl"),
+            ),
+        ),
+        train_variables=("daily_returns", "rolling_residuals", "residual_state", "regime_target"),
+        inference_variables=(
+            "daily_returns",
+            "rolling_residuals",
+            "factor_betas",
+            "residual_state",
+            "residual_volatility",
+            "regime_probabilities",
+        ),
+        output_variables=("stock_signals", "signal_modes", "target_weights", "portfolio_pnl"),
+    )
 
 
 class HybridResidualStrategy(Strategy):
@@ -90,6 +273,11 @@ class HybridResidualStrategy(Strategy):
         self.min_relative_volume_for_trend = min_relative_volume_for_trend
         self.allow_reversal = allow_reversal
         self.mr_score_source = mr_score_source
+
+    @property
+    def contract(self) -> StrategyContract:
+        """Return the declarative contract for this strategy family."""
+        return hybrid_residual_strategy_contract()
 
     def generate(self, data: ResidualStateResult, regime_probabilities: pd.DataFrame) -> HybridResidualSignalResult:
         """Generate stateful trend/mean-reversion stock-side signals.
