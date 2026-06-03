@@ -50,4 +50,12 @@ public:
 private:
     ///< State registry mapping instrument IDs to their data caches.
     std::unordered_map<InstrumentId, InstrumentMarketState> instrumentStates_;
+
+public:
+    // getters for testing
+    const InstrumentMarketState *getState(InstrumentId id) const
+    {
+        auto it = instrumentStates_.find(id);
+        return it != instrumentStates_.end() ? &it->second : nullptr;
+    }
 };

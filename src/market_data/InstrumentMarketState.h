@@ -65,4 +65,9 @@ private:
     MarketBucket activeBucket_; ///< Current raw sub-window accumulation container for data filtering.
 
     std::vector<FeatureBar> bars_15s_; ///< Historical storage array of finalized 15-second intervals used for Strategy.
+
+public:
+    // getters for testing
+    const std::vector<FeatureBar> &getBars() const { return bars_15s_; }
+    size_t barCount() const { return bars_15s_.size(); }
 };

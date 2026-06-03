@@ -8,5 +8,9 @@
     "**/*.out": true,
     "**/*.synctex.gz": true,
     "**/*.toc": true
-  }
+  },
+  "cmake.useCMakePresets": "always",
+  "cmake.defaultConfigurePreset": "dev",
+  "cmake.configureOnEdit": false,
+  "cmake.configureOnOpen": false,
 }

@@ -31,6 +31,7 @@ file(GLOB_RECURSE PROJECT_SOURCES
 
 list(FILTER PROJECT_SOURCES EXCLUDE REGEX ".*ibkr_smoke_test\\.cpp$")
 list(FILTER PROJECT_SOURCES EXCLUDE REGEX ".*ibkr_connect_test\\.cpp$")
+list(FILTER PROJECT_SOURCES EXCLUDE REGEX ".*/test/.*\\.cpp$")
 
 set(IBKR_INCLUDE_DIRS
     "${IBKR_CLIENT_DIR}"
@@ -39,60 +40,68 @@ set(IBKR_INCLUDE_DIRS
     "${CMAKE_SOURCE_DIR}/third_party/ibkr_10.37/source/cppclient/client/protobufUnix"
 )
 
-add_executable(projectorion
-    "${CMAKE_SOURCE_DIR}/src/main.cpp"
-    ${PROJECT_SOURCES}
-    ${IBKR_CLIENT_SOURCES}
-    ${IBKR_PROTO_SOURCES}
-)
+if ("${TARGET}" STREQUAL "binary")
+    add_executable(projectorion
+        "${CMAKE_SOURCE_DIR}/src/main.cpp"
+        ${PROJECT_SOURCES}
+        ${IBKR_CLIENT_SOURCES}
+        ${IBKR_PROTO_SOURCES}
+    )
 
-target_include_directories(projectorion PRIVATE
-    ${CMAKE_SOURCE_DIR}/src
-    ${IBKR_INCLUDE_DIRS}
-    ${Protobuf_INCLUDE_DIRS}
-)
+    target_include_directories(projectorion PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+        ${IBKR_INCLUDE_DIRS}
+        ${Protobuf_INCLUDE_DIRS}
+    )
 
-add_executable(ibkr_smoke_test
-    "${CMAKE_SOURCE_DIR}/src/ibkr_smoke_test.cpp"
-    ${IBKR_CLIENT_SOURCES}
-    ${IBKR_PROTO_SOURCES}
-)
+    add_executable(ibkr_smoke_test
+        "${CMAKE_SOURCE_DIR}/src/ibkr_smoke_test.cpp"
+        ${IBKR_CLIENT_SOURCES}
+        ${IBKR_PROTO_SOURCES}
+    )
 
-target_include_directories(ibkr_smoke_test PRIVATE
-    ${IBKR_INCLUDE_DIRS}
-    ${Protobuf_INCLUDE_DIRS}
-)
+    target_include_directories(ibkr_smoke_test PRIVATE
+        ${IBKR_INCLUDE_DIRS}
+        ${Protobuf_INCLUDE_DIRS}
+    )
 
-# target_link_libraries(ibkr_smoke_test PRIVATE
-#     ${Protobuf_LIBRARIES}
-# )
+    # target_link_libraries(ibkr_smoke_test PRIVATE
+    #     ${Protobuf_LIBRARIES}
+    # )
 
-add_executable(ibkr_connect_test
-    "${CMAKE_SOURCE_DIR}/src/ibkr_connect_test.cpp"
-    ${IBKR_CLIENT_SOURCES}
-    ${IBKR_PROTO_SOURCES}
-)
+    add_executable(ibkr_connect_test
+        "${CMAKE_SOURCE_DIR}/src/ibkr_connect_test.cpp"
+        ${IBKR_CLIENT_SOURCES}
+        ${IBKR_PROTO_SOURCES}
+    )
 
-target_include_directories(ibkr_connect_test PRIVATE
-    ${IBKR_INCLUDE_DIRS}
-    ${Protobuf_INCLUDE_DIRS}
-)
+    target_include_directories(ibkr_connect_test PRIVATE
+        ${IBKR_INCLUDE_DIRS}
+        ${Protobuf_INCLUDE_DIRS}
+    )
 
-# target_link_libraries(ibkr_connect_test PRIVATE
-#     ${Protobuf_LIBRARIES}
-# )
+    # target_link_libraries(ibkr_connect_test PRIVATE
+    #     ${Protobuf_LIBRARIES}
+    # )
 
 
-target_link_directories(ibkr_smoke_test PRIVATE
-    "${CMAKE_SOURCE_DIR}/third_party/ibkr_10.37/source/cppclient/client/lib"
-)
-target_link_directories(ibkr_connect_test PRIVATE
-    "${CMAKE_SOURCE_DIR}/third_party/ibkr_10.37/source/cppclient/client/lib"
-)
-target_link_directories(projectorion PRIVATE
-    "${CMAKE_SOURCE_DIR}/third_party/ibkr_10.37/source/cppclient/client/lib"
-)
+    target_link_directories(ibkr_smoke_test PRIVATE
+        "${CMAKE_SOURCE_DIR}/third_party/ibkr_10.37/source/cppclient/client/lib"
+    )
+    target_link_directories(ibkr_connect_test PRIVATE
+        "${CMAKE_SOURCE_DIR}/third_party/ibkr_10.37/source/cppclient/client/lib"
+    )
+    target_link_directories(projectorion PRIVATE
+        "${CMAKE_SOURCE_DIR}/third_party/ibkr_10.37/source/cppclient/client/lib"
+    )
 
-target_link_libraries(ibkr_smoke_test PRIVATE protobuf::libprotobuf bid)
-target_link_libraries(ibkr_connect_test PRIVATE protobuf::libprotobuf bid)
-target_link_libraries(projectorion PRIVATE protobuf::libprotobuf bid)
+    target_link_libraries(ibkr_smoke_test PRIVATE protobuf::libprotobuf bid)
+    target_link_libraries(ibkr_connect_test PRIVATE protobuf::libprotobuf bid)
+    target_link_libraries(projectorion PRIVATE protobuf::libprotobuf bid)
+
+elseif ("${TARGET}" STREQUAL "test")
+    enable_testing()
+    add_subdirectory(src/test)
+else()
+    message(FATAL_ERROR "❌ Please set TARGET to 'binary' or 'test' using -DTARGET=<target>")
+endif()
