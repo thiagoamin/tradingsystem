@@ -31,10 +31,14 @@ void MarketBucket::addTick(const TradeTick &tick)
     unsignedVolume_us_ += tick.size_us;
     dollarVolume_us_ += tick.price * tick.size_us;
 
-    double midpoint = (latestBid_ + latestAsk_) / 2.0;
-    int sign = tick.price >= midpoint ? +1 : -1;
+    // Only add to signed volume if there is a valid quote
+    if (hasValidQuote())
+    {
+        double midpoint = (latestBid_ + latestAsk_) / 2.0;
+        int sign = tick.price >= midpoint ? +1 : -1;
 
-    signedVolume_us_ += sign * tick.size_us;
+        signedVolume_us_ += sign * tick.size_us;
+    }
 
     // array
     prices_.push_back(tick.price);
@@ -83,6 +87,12 @@ FeatureBar MarketBucket::build(InstrumentId id, int64_t bucketId) const
     bar.endTimeStamp_ns = endTimeStamp_ns_;
     bar.interval_ns = endTimeStamp_ns_ - startTimeStamp_ns_;
 
+    // OHLC
+    bar.open = open_;
+    bar.close = close_;
+    bar.high = high_;
+    bar.low = low_;
+
     // trade derived
     bar.tradeCount = tradeCount_;
     bar.unsignedVolume_us = unsignedVolume_us_;
@@ -96,6 +106,39 @@ FeatureBar MarketBucket::build(InstrumentId id, int64_t bucketId) const
         bar.svi = static_cast<double>(signedVolume_us_) / unsignedVolume_us_;
     }
 
+    // Shouldn't happen but prevent dividsion by zero.
+    if (tradeCount_ > 0)
+    {
+        bar.priceMean = priceTotal_ / tradeCount_;
+        bar.sizeMean_us = static_cast<double>(unsignedVolume_us_) / tradeCount_;
+
+        bar.priceStdev =
+            std::sqrt(priceM2_ / tradeCount_);
+
+        bar.sizeStdev_us =
+            std::sqrt(sizeM2_us_ / tradeCount_);
+
+        // TODO, do this better
+        auto sortedPrices = prices_;
+        auto sortedSizes = sizes_us_;
+
+        std::sort(sortedPrices.begin(), sortedPrices.end());
+        std::sort(sortedSizes.begin(), sortedSizes.end());
+
+        size_t n_price = prices_.size() - 1;
+
+        // truncating size
+        bar.priceQ1 = sortedPrices[static_cast<size_t>(n_price * 0.25)];
+        bar.priceQ2 = sortedPrices[static_cast<size_t>(n_price * 0.50)];
+        bar.priceQ3 = sortedPrices[static_cast<size_t>(n_price * 0.75)];
+
+        size_t n_size = sortedSizes.size() - 1;
+
+        bar.sizeQ1_us = sortedSizes[static_cast<size_t>(n_size * 0.25)];
+        bar.sizeQ2_us = sortedSizes[static_cast<size_t>(n_size * 0.50)];
+        bar.sizeQ3_us = sortedSizes[static_cast<size_t>(n_size * 0.75)];
+    }
+
     if (hasValidQuote())
     {
         // quote derived
@@ -104,21 +147,28 @@ FeatureBar MarketBucket::build(InstrumentId id, int64_t bucketId) const
         double bidSizeAvg = static_cast<double>(bidSizeTotal_us_) / quoteCount_;
         double askSizeAvg = static_cast<double>(askSizeTotal_us_) / quoteCount_;
 
-        double midpointClose =
-            (latestBid_ + latestAsk_) / 2.0;
-        double midpointAvg =
-            (bidAvg + askAvg) / 2.0;
+        double midpointClose = (latestBid_ + latestAsk_) / 2.0;
+        double midpointAvg = (bidAvg + askAvg) / 2.0;
+        double spreadClose = latestAsk_ - latestBid_;
+        double spreadAvg = askAvg - bidAvg;
+
+        bar.bidAvg = bidAvg;
+        bar.askAvg = askAvg;
+
+        bar.bidClose = latestBid_;
+        bar.askClose = latestAsk_;
+        bar.bidSizeClose_us = latestBidSize_us_;
+        bar.askSizeClose_us = latestAskSize_us_;
 
         bar.midpointClose = midpointClose;
         bar.midpointAvg = midpointAvg;
-
-        bar.spreadClose = latestAsk_ - latestBid_;
-        bar.spreadAvg = askAvg - bidAvg;
+        bar.spreadClose = spreadClose;
+        bar.spreadAvg = spreadAvg;
 
         bar.spreadBptsClose =
-            10'000LL * (bar.spreadClose) / midpointClose;
+            10'000LL * (spreadClose) / midpointClose;
         bar.spreadBptsAvg =
-            10'000LL * (bar.spreadAvg) / midpointAvg;
+            10'000LL * (spreadAvg) / midpointAvg;
 
         bar.quoteImbalanceClose =
             static_cast<double>(
@@ -137,60 +187,30 @@ FeatureBar MarketBucket::build(InstrumentId id, int64_t bucketId) const
              bidAvg * askSizeAvg) /
             (askSizeAvg + bidSizeAvg);
 
-        if (bar.spreadClose != 0.0)
+        if (spreadClose != 0.0)
         {
             bar.microPriceDevClose =
-                (bar.microPriceClose - bar.midpointClose) /
-                (bar.spreadClose);
+                (bar.microPriceClose - midpointClose) /
+                (spreadClose);
         }
-        if (bar.spreadAvg != 0.0)
+        if (spreadAvg != 0.0)
         {
             bar.microPriceDevAvg =
-                (bar.microPriceAvg - bar.midpointAvg) /
-                (bar.spreadAvg);
+                (bar.microPriceAvg - midpointAvg) /
+                (spreadAvg);
         }
 
         // trade derived
-        bar.vwapGap =
-            (bar.vwap - midpointClose) / midpointClose;
+        if (midpointClose != 0.0)
+        {
+            bar.vwapGap =
+                (bar.vwap - midpointClose) / midpointClose;
+        }
     }
-    // OHLC
-    bar.open = open_;
-    bar.close = close_;
-    bar.high = high_;
-    bar.low = low_;
-
-    bar.priceMean = priceTotal_ / tradeCount_;
-    bar.sizeMean_us = static_cast<double>(unsignedVolume_us_) / tradeCount_;
-
-    bar.priceStdev =
-        std::sqrt(priceM2_ / tradeCount_);
-
-    bar.sizeStdev_us =
-        std::sqrt(sizeM2_us_ / tradeCount_);
-
-    // TODO, do this better
-    auto sortedPrices = prices_;
-    auto sortedSizes = sizes_us_;
-
-    std::sort(sortedPrices.begin(), sortedPrices.end());
-    std::sort(sortedSizes.begin(), sortedSizes.end());
-
-    size_t n_price = prices_.size() - 1;
-
-    // truncating size
-    bar.priceQ1 = sortedPrices[static_cast<size_t>(n_price * 0.25)];
-    bar.priceQ2 = sortedPrices[static_cast<size_t>(n_price * 0.50)];
-    bar.priceQ3 = sortedPrices[static_cast<size_t>(n_price * 0.75)];
-
-    size_t n_size = sortedSizes.size() - 1;
-
-    bar.sizeQ1_us = sortedSizes[static_cast<size_t>(n_size * 0.25)];
-    bar.sizeQ2_us = sortedSizes[static_cast<size_t>(n_size * 0.50)];
-    bar.sizeQ3_us = sortedSizes[static_cast<size_t>(n_size * 0.75)];
 
     return bar;
 }
+
 void MarketBucket::clear()
 {
     startTimeStamp_ns_ = 0;
@@ -202,11 +222,11 @@ void MarketBucket::clear()
     signedVolume_us_ = 0;
     dollarVolume_us_ = 0.0;
 
-    quoteCount_ = 0.0;
+    quoteCount_ = 0;
     bidTotal_ = 0.0;
     askTotal_ = 0.0;
-    bidSizeTotal_us_ = 0.0;
-    askSizeTotal_us_ = 0.0;
+    bidSizeTotal_us_ = 0;
+    askSizeTotal_us_ = 0;
 
     open_ = high_ = low_ = close_ = 0.0;
 

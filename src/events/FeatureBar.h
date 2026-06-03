@@ -22,8 +22,8 @@ struct FeatureBar
     /* ----------------------------- Quote Features ----------------------------- */
     double bidClose;            // b_a,t
     double askClose;            // a_a,t
-    int64_t bidsizeClose_us;    // B_a,t
-    int64_t assizeClose_us;     // A_a,t
+    int64_t bidSizeClose_us;    // B_a,t
+    int64_t askSizeClose_us;    // A_a,t
     double midpointClose;       // m_a,t
     double spreadClose;         // s_a,t
     double spreadBptsClose;     // s^bps_a,t
@@ -31,7 +31,7 @@ struct FeatureBar
     double microPriceClose;     // μ_a,t
     double microPriceDevClose;  // MP_a,t
 
-    // Extra
+    // Extra data
     double bidAvg;
     double askAvg;
     double midpointAvg;       // m_a,t
@@ -47,9 +47,9 @@ struct FeatureBar
     int64_t signedVolume_us;   // V^T_a,t,h * ϵ_a,k
     double dollarVolume_us;    // DV^T_a,t,h
 
-    double vwap; ///< volume weighted average price
-    double svi;  ///< signed volume imbalance
-    double vwapGap;
+    double vwap;    ///< volume weighted average price
+    double svi;     ///< signed volume imbalance
+    double vwapGap; ///< requires valid quote
 
     /* ------------------------------- OHLC/debug ------------------------------- */
     double open;
@@ -57,18 +57,15 @@ struct FeatureBar
     double low;
     double close;
 
-    /* ---------------------------- Extra price stats --------------------------- */
+    /* ------------------------ Extra Price / Size Stats ------------------------ */
     double priceMean;
     double priceStdev;
-
     double priceQ1;
     double priceQ2;
     double priceQ3;
 
-    /* ---------------------------- Extra size stats ---------------------------- */
     double sizeMean_us;
     double sizeStdev_us;
-
     double sizeQ1_us;
     double sizeQ2_us;
     double sizeQ3_us;
