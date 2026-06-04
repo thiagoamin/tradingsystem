@@ -1,0 +1,37 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "📈 CMake: Configure Dev",
+			"detail": "Configure CMake for Project Orion",
+			"type": "cmake",
+			"command": "configure",
+			"preset": "dev",
+			"group": "build"
+		},
+		{
+			"label": "🧪 CMake: Configure Test",
+			"detail": "Configure CMake for testing",
+			"type": "cmake",
+			"command": "configure",
+			"preset": "test",
+			"group": "build"
+		},
+		{
+			"label": "📈 Build: Dev",
+			"detail": "CMake build Project Orion",
+			"type": "cmake",
+			"command": "build",
+			"preset": "dev",
+			"group": "build"
+		},
+		{
+			"label": "🧪 Build: Test",
+			"detail": "CMake build test",
+			"type": "cmake",
+			"command": "build",
+			"preset": "test",
+			"group": "build"
+		}
+	]
+}

@@ -1,0 +1,39 @@
+{
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "default",
+            "hidden": true
+        },
+        {
+            "name": "dev",
+            "displayName": "Dev Build",
+            "description": "Development build for trading system in C++",
+            "binaryDir": "build_dev",
+            "cacheVariables": {
+                "TARGET": "binary",
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "test",
+            "displayName": "Test Build",
+            "description": "Testing build for trading system in C++",
+            "binaryDir": "build_test",
+            "cacheVariables": {
+                "TARGET": "test",
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "dev",
+            "configurePreset": "dev"
+        },
+        {
+            "name": "test",
+            "configurePreset": "test"
+        }
+    ]
+}
