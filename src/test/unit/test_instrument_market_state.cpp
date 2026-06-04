@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 #include "market_data/InstrumentMarketState.h"
 
-static constexpr int64_t kB0 = 0LL;                  // bucket 0: [0, 15s)
-static constexpr int64_t kB1 = 15'000'000'000LL;     // bucket 1: [15s, 30s)
-static constexpr int64_t kB2 = 30'000'000'000LL;     // bucket 2: [30s, 45s)
+static constexpr int64_t kB0 = 0LL;              // bucket 0: [0, 15s)
+static constexpr int64_t kB1 = 15'000'000'000LL; // bucket 1: [15s, 30s)
+static constexpr int64_t kB2 = 30'000'000'000LL; // bucket 2: [30s, 45s)
 
 static TradeTick makeTick(int64_t ts_ns, double price = 100.0, int64_t size_us = 1'000'000)
 {
@@ -27,13 +27,13 @@ static QuoteSnapshot makeQuote(double bid, double ask,
     return q;
 }
 
-// ── Bar emission logic ────────────────────────────────────────────────────────
+/* --------------------------- Bar Emission Logic --------------------------- */
 
 TEST(InstrumentMarketStateTest, NoBarWithinSameBucket)
 {
     InstrumentMarketState s(InstrumentId::SPY);
     s.onTick(makeTick(kB0));
-    s.onTick(makeTick(kB0 + 1'000'000'000LL));
+    s.onTick(makeTick(kB0 + 1'000'000'000LL)); // 1s has passed
     EXPECT_EQ(s.barCount(), 0u);
 }
 
@@ -41,7 +41,7 @@ TEST(InstrumentMarketStateTest, OneBarOnFirstBoundary)
 {
     InstrumentMarketState s(InstrumentId::SPY);
     s.onTick(makeTick(kB0)); // populates bucket 0
-    s.onTick(makeTick(kB1)); // crosses boundary → emits bar for bucket 0
+    s.onTick(makeTick(kB1)); // crosses 15s boundary → emits bar for bucket 0
     EXPECT_EQ(s.barCount(), 1u);
 }
 
@@ -49,33 +49,46 @@ TEST(InstrumentMarketStateTest, TwoBarsOnTwoBoundaries)
 {
     InstrumentMarketState s(InstrumentId::SPY);
     s.onTick(makeTick(kB0));
-    s.onTick(makeTick(kB1)); // emits bar 0
-    s.onTick(makeTick(kB2)); // emits bar 1
+    s.onTick(makeTick(kB1)); // emits bar 0 @ 15s
+    s.onTick(makeTick(kB2)); // emits bar 1 @ 30s
     EXPECT_EQ(s.barCount(), 2u);
+}
+
+TEST(InstrumentMarketStateTest, OneBarToEnsureTruncates)
+{
+    InstrumentMarketState s(InstrumentId::SPY);
+    s.onTick(makeTick(kB0));
+    s.onTick(makeTick(kB1 + 7'000'000'000LL)); // emits bar 0 @ 22s
+    EXPECT_EQ(s.barCount(), 1u);
 }
 
 TEST(InstrumentMarketStateTest, EmptyBucketNotEmitted)
 {
     // First tick lands in bucket 1 — bucket 0 was never populated, so no bar for it
     InstrumentMarketState s(InstrumentId::SPY);
-    s.onTick(makeTick(kB1));
+    s.onTick(makeTick(kB1)); // first tick at 15s
     s.onTick(makeTick(kB2)); // emits bar for bucket 1 only
     EXPECT_EQ(s.barCount(), 1u);
 }
 
-// ── Bar content ───────────────────────────────────────────────────────────────
+/* ------------------------------- Bar Content ------------------------------ */
 
-TEST(InstrumentMarketStateTest, BarInstrumentIdIsCorrect)
+TEST(InstrumentMarketStateTest, BarMetadataIsCorrect)
 {
     InstrumentMarketState s(InstrumentId::AAPL);
     TradeTick t = makeTick(kB0);
     t.instrumentId = InstrumentId::AAPL;
     s.onTick(t);
-    TradeTick t2 = makeTick(kB1);
+    TradeTick t2 = makeTick(14'000'000'000LL);
     t2.instrumentId = InstrumentId::AAPL;
     s.onTick(t2);
+    TradeTick t3 = makeTick(kB1);
+    t3.instrumentId = InstrumentId::AAPL;
+    s.onTick(t3);
     ASSERT_EQ(s.barCount(), 1u);
     EXPECT_EQ(s.getBars()[0].instrumentId, InstrumentId::AAPL);
+    ASSERT_EQ(s.getBars()[0].startTimeStamp_ns, kB0);
+    ASSERT_EQ(s.getBars()[0].endTimeStamp_ns, 14'000'000'000LL);
 }
 
 TEST(InstrumentMarketStateTest, QuoteBeforeTickAppearsInBar)
@@ -86,15 +99,31 @@ TEST(InstrumentMarketStateTest, QuoteBeforeTickAppearsInBar)
     s.onTick(makeTick(kB0, 100.0, 1'000'000));
     s.onTick(makeTick(kB1));
     ASSERT_EQ(s.barCount(), 1u);
-    EXPECT_DOUBLE_EQ(s.getBars()[0].spreadClose,   2.0);   // 101 - 99
+    EXPECT_DOUBLE_EQ(s.getBars()[0].spreadClose, 2.0);     // 101 - 99
     EXPECT_DOUBLE_EQ(s.getBars()[0].midpointClose, 100.0); // (99+101)/2
+}
+
+TEST(InstrumentMarketStateTest, LatestQuoteCarriedIntoNewBarIfNoNewQuote)
+{
+    // Quote arrives first, then a tick in bucket 0, then a tick in bucket 1 triggers emit
+    InstrumentMarketState s(InstrumentId::SPY);
+    s.onQuote(makeQuote(99.0, 101.0));
+    s.onTick(makeTick(kB0, 100.0, 1'000'000));
+    s.onTick(makeTick(kB1));
+    ASSERT_EQ(s.barCount(), 1u);
+    s.onTick(makeTick(kB2));
+    ASSERT_EQ(s.barCount(), 2u);
+    EXPECT_DOUBLE_EQ(s.getBars()[0].askClose, 101.0);
+    EXPECT_DOUBLE_EQ(s.getBars()[0].bidClose, 99.0);
+    EXPECT_DOUBLE_EQ(s.getBars()[1].askClose, 101.0);
+    EXPECT_DOUBLE_EQ(s.getBars()[1].bidClose, 99.0);
 }
 
 TEST(InstrumentMarketStateTest, BarBucketIdMatchesWindow)
 {
     InstrumentMarketState s(InstrumentId::SPY);
-    s.onTick(makeTick(kB0));
+    s.onTick(makeTick(kB0 + 3'000'000'000LL));
     s.onTick(makeTick(kB1));
     ASSERT_EQ(s.barCount(), 1u);
-    EXPECT_EQ(s.getBars()[0].barId, kB0 / 15'000'000'000LL); // bucket 0 → id 0
+    EXPECT_EQ(s.getBars()[0].barId, (kB0 + 3'000'000'000LL) / 15'000'000'000LL); // bucket 0 → id 0
 }
