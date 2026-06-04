@@ -30,7 +30,7 @@ The core architecture is:
 - `research/experiment_outputs/` - generated experiment outputs and diagnostics; git-ignored.
 
 
-## C++ Trading Paper/ Live Trading Infrastructure
+## C++ Paper/ Live Trading Infrastructure
 - `src/` - core C++ trading infrastructure
 - `src/ibkr` - integrates our system with ibkr and wraps ibkr data callbacks
 - `src/market_data` - market data ingestion
