@@ -1,0 +1,36 @@
+name: Project Orion CI
+on:
+  pull_request:
+jobs:
+  clang-format:
+    name: Check C++ Code Format
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Format code
+        run: python3 utilities/fix_formating.py
+
+      - name: Check for differences
+        run: git --no-pager diff --color --exit-code
+
+  run-test:
+    name: Test Trading Engine
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build and run tests
+        run: 
+
+  build-dev:
+    name: Build Trading Engine Binary
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build
+        run: 
