@@ -1,16 +1,17 @@
 #pragma once
 
 #include <cstdint>
-#include "events/TradeTick.h"
+
 #include "events/FeatureBar.h"
+#include "events/TradeTick.h"
 
 class BarBuilder
 {
-public:
+   public:
     BarBuilder(int64_t &barId);
 
     void build();
 
-private:
+   private:
     int64_t interval_ns_;
 };

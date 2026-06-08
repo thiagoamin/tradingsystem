@@ -1,10 +1,12 @@
 #pragma once
 
-#include <cstdint>
 #include <core/InstrumentId.h>
 
+#include <cstdint>
+
 /**
- * @brief Aggregated feature list containing microstructure indicators and pricing statistics needed for Strategy.
+ * @brief Aggregated feature list containing microstructure indicators and pricing statistics needed
+ * for Strategy.
  *
  * @details Compiles transactional trade flows, limit order book imbalances, and raw order sizes
  * into a single unified mathematical footprint for alpha generation and model ingestion.
@@ -13,23 +15,23 @@ struct FeatureBar
 {
     /* -------------------------------- Metadata -------------------------------- */
     InstrumentId instrumentId;
-    int64_t barId;
+    int64_t      barId;
 
     int64_t startTimeStamp_ns; ///< UNIX epoch nanoseconds
     int64_t endTimeStamp_ns;   ///< UNIX epoch nanoseconds
     int64_t interval_ns;
 
     /* ----------------------------- Quote Features ----------------------------- */
-    double bidClose;            // b_a,t
-    double askClose;            // a_a,t
-    int64_t bidSizeClose_us;    // B_a,t
-    int64_t askSizeClose_us;    // A_a,t
-    double midpointClose;       // m_a,t
-    double spreadClose;         // s_a,t
-    double spreadBptsClose;     // s^bps_a,t
-    double quoteImbalanceClose; // Imb_a,t
-    double microPriceClose;     // μ_a,t
-    double microPriceDevClose;  // MP_a,t
+    double  bidClose;            // b_a,t
+    double  askClose;            // a_a,t
+    int64_t bidSizeClose_us;     // B_a,t
+    int64_t askSizeClose_us;     // A_a,t
+    double  midpointClose;       // m_a,t
+    double  spreadClose;         // s_a,t
+    double  spreadBptsClose;     // s^bps_a,t
+    double  quoteImbalanceClose; // Imb_a,t
+    double  microPriceClose;     // μ_a,t
+    double  microPriceDevClose;  // MP_a,t
 
     // Extra data
     double bidAvg;
@@ -45,7 +47,7 @@ struct FeatureBar
     int32_t tradeCount;        // N^T_a,t,h
     int64_t unsignedVolume_us; // V^T_a,t,h
     int64_t signedVolume_us;   // V^T_a,t,h * ϵ_a,k
-    double dollarVolume_us;    // DV^T_a,t,h
+    double  dollarVolume_us;   // DV^T_a,t,h
 
     double vwap;    ///< volume weighted average price
     double svi;     ///< signed volume imbalance

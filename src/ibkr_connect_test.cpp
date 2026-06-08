@@ -2,15 +2,18 @@
 
 #include "DefaultEWrapper.h"
 #include "EClientSocket.h"
-#include "EReaderOSSignal.h"
 #include "EReader.h"
+#include "EReaderOSSignal.h"
 
 class TestWrapper : public DefaultEWrapper
 {
-public:
-    void error(int id, time_t errorTime, int errorCode,
-               const std::string &errorString,
-               const std::string &advancedOrderRejectJson) override
+   public:
+    void error(
+        int                id,
+        time_t             errorTime,
+        int                errorCode,
+        const std::string &errorString,
+        const std::string &advancedOrderRejectJson) override
     {
         if (errorCode == 2104 || errorCode == 2106 || errorCode == 2158)
         {
@@ -18,36 +21,29 @@ public:
             return;
         }
 
-        std::cout << "Error. Id: " << id
-                  << ", Code: " << errorCode
-                  << ", Msg: " << errorString << std::endl;
+        std::cout << "Error. Id: " << id << ", Code: " << errorCode << ", Msg: " << errorString
+                  << std::endl;
     }
 
-    void connectAck() override
-    {
-        std::cout << "Connected ACK" << std::endl;
-    }
+    void connectAck() override { std::cout << "Connected ACK" << std::endl; }
 
     void nextValidId(OrderId orderId) override
     {
         std::cout << "Next valid order id: " << orderId << std::endl;
     }
 
-    void connectionClosed() override
-    {
-        std::cout << "Connection closed" << std::endl;
-    }
+    void connectionClosed() override { std::cout << "Connection closed" << std::endl; }
 };
 
 int main()
 {
-    TestWrapper wrapper;
+    TestWrapper     wrapper;
     EReaderOSSignal signal(2000);
-    EClientSocket client(&wrapper, &signal);
+    EClientSocket   client(&wrapper, &signal);
 
-    const char *host = "127.0.0.1";
-    int port = 7497;
-    int clientId = 0;
+    const char *host     = "127.0.0.1";
+    int         port     = 7497;
+    int         clientId = 0;
 
     if (!client.eConnect(host, port, clientId))
     {

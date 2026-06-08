@@ -16,13 +16,13 @@
  *
  */
 
-#include "events/TradeTick.h"
-#include "events/QuoteSnapshot.h"
-#include "market_data/BarBuilder.h"
+#include <unordered_map>
+
 #include "InstrumentMarketState.h"
 #include "core/InstrumentId.h"
-
-#include <unordered_map>
+#include "events/QuoteSnapshot.h"
+#include "events/TradeTick.h"
+#include "market_data/BarBuilder.h"
 
 /**
  * @brief Central pipeline engine processing inbound streaming market data feeds.
@@ -32,7 +32,7 @@
  */
 class MarketDataEngine
 {
-public:
+   public:
     /**
      * @brief Ingests an external, market-driven trade execution event.
      *
@@ -47,11 +47,11 @@ public:
      */
     void onQuoteSample(const QuoteSnapshot &quote);
 
-private:
+   private:
     ///< State registry mapping instrument IDs to their data caches.
     std::unordered_map<InstrumentId, InstrumentMarketState> instrumentStates_;
 
-public:
+   public:
     // getters for testing
     const InstrumentMarketState *getState(InstrumentId id) const
     {

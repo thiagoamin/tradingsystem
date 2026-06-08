@@ -1,18 +1,20 @@
 #include "IbkrClient.h"
-#include "utils/TimeUtils.h"
-#include "utils/MarketConstants.h"
-#include "OrionTradingContract.h"
-#include "TagValue.h"
 
 #include <iostream>
 
+#include "OrionTradingContract.h"
+#include "TagValue.h"
+#include "utils/MarketConstants.h"
+#include "utils/TimeUtils.h"
+
 // 2s to wait for signal before timeout
-IbkrClient::IbkrClient(MarketDataEngine &engine) : marketDataEngine_(engine),
-                                                   osSignal_(2000),
-                                                   pClientSocket_(std::make_unique<EClientSocket>(this, &osSignal_)),
-                                                   state_(CONNECT),
-                                                   orderId_(0),
-                                                   subscribed_(false)
+IbkrClient::IbkrClient(MarketDataEngine &engine)
+  : marketDataEngine_(engine),
+    osSignal_(2000),
+    pClientSocket_(std::make_unique<EClientSocket>(this, &osSignal_)),
+    state_(CONNECT),
+    orderId_(0),
+    subscribed_(false)
 {
 }
 
@@ -27,22 +29,27 @@ bool IbkrClient::connect(const char *host, int port, int clientId)
 
     // TODO: Connection retry
     // 1. Log attempt to connect
-    printf("Connecting to %s:%d clientId:%d\n", !(host && *host) ? "127.0.0.1" : host, port, clientId);
+    printf(
+        "Connecting to %s:%d clientId:%d\n", !(host && *host) ? "127.0.0.1" : host, port, clientId);
 
     // 2. Connection attempt
     bool ok = pClientSocket_->eConnect(host, port, clientId);
 
     if (ok)
     {
-        printf("Successfully connected to %s:%d clientId:%d serverVersion: %d\n",
-               pClientSocket_->host().c_str(), pClientSocket_->port(), clientId, pClientSocket_->EClient::serverVersion());
+        printf(
+            "Successfully connected to %s:%d clientId:%d serverVersion: %d\n",
+            pClientSocket_->host().c_str(), pClientSocket_->port(), clientId,
+            pClientSocket_->EClient::serverVersion());
 
-        pReader_ = std::make_unique<EReader>(pClientSocket_.get(), &osSignal_); // Construct object now
+        pReader_ =
+            std::make_unique<EReader>(pClientSocket_.get(), &osSignal_); // Construct object now
         pReader_->start();
     }
     else
-        printf("Failed to connect to %s:%d clientId:%d\n",
-               pClientSocket_->host().c_str(), pClientSocket_->port(), clientId);
+        printf(
+            "Failed to connect to %s:%d clientId:%d\n", pClientSocket_->host().c_str(),
+            pClientSocket_->port(), clientId);
 
     return ok;
 }
@@ -66,13 +73,13 @@ void IbkrClient::run()
     // TODO: implement better FSM
     switch (state_)
     {
-    case CONNECT:
-        printf("Waiting for IBKR session initialization...\n");
-        break;
-    case RUN:
-        break;
-    case ERROR:
-        break;
+        case CONNECT:
+            printf("Waiting for IBKR session initialization...\n");
+            break;
+        case RUN:
+            break;
+        case ERROR:
+            break;
     }
 
     processMessages();
@@ -99,9 +106,12 @@ void IbkrClient::nextValidId(OrderId orderId)
     // TODO make no error occured to be in the RUN state
     state_ = RUN;
 };
-void IbkrClient::error(int id, time_t errorTime, int errorCode,
-                       const std::string &errorString,
-                       const std::string &advancedOrderRejectJson)
+void IbkrClient::error(
+    int                id,
+    time_t             errorTime,
+    int                errorCode,
+    const std::string &errorString,
+    const std::string &advancedOrderRejectJson)
 {
     char errorTimeStr[80];
 
@@ -121,23 +131,26 @@ void IbkrClient::error(int id, time_t errorTime, int errorCode,
 
     if (!advancedOrderRejectJson.empty())
     {
-        printf("Error. Id: %d, Time: %s, Code: %d, Msg: %s, AdvancedOrderRejectJson: %s\n",
-               id, errorTimeStr, errorCode, errorString.c_str(),
-               advancedOrderRejectJson.c_str());
+        printf(
+            "Error. Id: %d, Time: %s, Code: %d, Msg: %s, AdvancedOrderRejectJson: %s\n", id,
+            errorTimeStr, errorCode, errorString.c_str(), advancedOrderRejectJson.c_str());
     }
     else
     {
-        printf("Error. Id: %d, Time: %s, Code: %d, Msg: %s\n",
-               id, errorTimeStr, errorCode, errorString.c_str());
+        printf(
+            "Error. Id: %d, Time: %s, Code: %d, Msg: %s\n", id, errorTimeStr, errorCode,
+            errorString.c_str());
     }
 
     // TODO: Do more here
 }
 
 // IBKR Tick Price Updates
-void IbkrClient::tickPrice(TickerId tickerId, TickType field,
-                           double price,
-                           const TickAttrib &attribs)
+void IbkrClient::tickPrice(
+    TickerId          tickerId,
+    TickType          field,
+    double            price,
+    const TickAttrib &attribs)
 {
     // 1. Get instrument id
     // map tickerId to instrumentid
@@ -148,7 +161,7 @@ void IbkrClient::tickPrice(TickerId tickerId, TickType field,
         return;
     }
 
-    auto &quote = quote_cache_[it->second];
+    auto &quote        = quote_cache_[it->second];
     quote.instrumentId = it->second;
 
     // 2. Check if bid or ask
@@ -163,8 +176,7 @@ void IbkrClient::tickPrice(TickerId tickerId, TickType field,
 }
 
 // IBKR Tick Size Updates
-void IbkrClient::tickSize(TickerId tickerId, TickType field,
-                          Decimal size)
+void IbkrClient::tickSize(TickerId tickerId, TickType field, Decimal size)
 {
     // 1. Get instrument id
     auto it = reqIdToInstrumentId_.find(tickerId);
@@ -176,38 +188,37 @@ void IbkrClient::tickSize(TickerId tickerId, TickType field,
 
     int64_t newSize_us = convertDecimalToMicroShares(size);
 
-    auto &quote = quote_cache_[it->second];
+    auto &quote        = quote_cache_[it->second];
     quote.instrumentId = it->second;
 
     // 2. Check if bid or ask
     if (field == BID_SIZE || field == DELAYED_BID_SIZE)
     {
-        quote.bidSize_us = newSize_us;
+        quote.bidSize_us   = newSize_us;
         quote.timeStamp_ns = TimeUtils::steady_time_ns();
     }
     else if (field == ASK_SIZE || field == DELAYED_ASK_SIZE)
     {
-
-        quote.askSize_us = newSize_us;
+        quote.askSize_us   = newSize_us;
         quote.timeStamp_ns = TimeUtils::steady_time_ns();
     }
 
     // 3. Send quote to market data engine
-    if (quote.bid > 0 && quote.ask > 0 &&
-        quote.bidSize_us > 0 && quote.askSize_us > 0)
+    if (quote.bid > 0 && quote.ask > 0 && quote.bidSize_us > 0 && quote.askSize_us > 0)
     {
         marketDataEngine_.onQuoteSample(quote);
     }
 }
 
-void IbkrClient::tickByTickAllLast(int reqId,
-                                   int tickType,
-                                   time_t time,
-                                   double price,
-                                   Decimal size,
-                                   const TickAttribLast &tickAttribLast,
-                                   const std::string &exchange,
-                                   const std::string &specialConditions)
+void IbkrClient::tickByTickAllLast(
+    int                   reqId,
+    int                   tickType,
+    time_t                time,
+    double                price,
+    Decimal               size,
+    const TickAttribLast &tickAttribLast,
+    const std::string    &exchange,
+    const std::string    &specialConditions)
 {
     auto it = reqIdToInstrumentId_.find(reqId);
     if (it == reqIdToInstrumentId_.end())
@@ -218,12 +229,12 @@ void IbkrClient::tickByTickAllLast(int reqId,
 
     TradeTick event;
 
-    event.instrumentId = it->second;
-    event.exchangeTimestamp_ns = static_cast<int64_t>(time) * TimeUtils::kNanosecondsPerSecond;
+    event.instrumentId           = it->second;
+    event.exchangeTimestamp_ns   = static_cast<int64_t>(time) * TimeUtils::kNanosecondsPerSecond;
     event.recvSteadyTimestamp_ns = TimeUtils::steady_time_ns();
-    event.recvWallTimestamp_ns = TimeUtils::wall_time_ns();
-    event.price = price;
-    event.size_us = convertDecimalToMicroShares(size);
+    event.recvWallTimestamp_ns   = TimeUtils::wall_time_ns();
+    event.price                  = price;
+    event.size_us                = convertDecimalToMicroShares(size);
 
     marketDataEngine_.onTradeTick(event);
 }
@@ -272,33 +283,24 @@ void IbkrClient::subscribe()
     std::cout << "Requested market data for Project Orion instruments\n";
 }
 
-void IbkrClient::reqQuoteData(TickerId reqId,
-                              InstrumentId instrumentId,
-                              const Contract &contract)
+void IbkrClient::reqQuoteData(TickerId reqId, InstrumentId instrumentId, const Contract &contract)
 {
     reqIdToInstrumentId_[reqId] = instrumentId;
 
-    pClientSocket_->reqMktData(
-        reqId,
-        contract,
-        "",
-        false,
-        false,
-        TagValueListSPtr());
+    pClientSocket_->reqMktData(reqId, contract, "", false, false, TagValueListSPtr());
 }
 
-void IbkrClient::reqTickByTickData(TickerId reqId,
-                                   InstrumentId instrumentId,
-                                   const Contract &contract)
+void IbkrClient::reqTickByTickData(
+    TickerId        reqId,
+    InstrumentId    instrumentId,
+    const Contract &contract)
 {
     reqIdToInstrumentId_[reqId] = instrumentId;
 
     pClientSocket_->reqTickByTickData(
-        reqId,
-        contract,
+        reqId, contract,
         "AllLast", // All trades tickType
-        0,
-        false);
+        0, false);
 }
 
 // Converts IBKR Decimal → fixed-point shares (1 share = 10,000 units)
@@ -306,5 +308,6 @@ int64_t IbkrClient::convertDecimalToMicroShares(Decimal size)
 {
     // Best course of action to avoid double for better memory and make our code modular
     // Won't be the bottle neck in latency
-    return static_cast<int64_t>(DecimalFunctions::decimalToDouble(size) * MarketConstants::kMicrosharesPerShare);
+    return static_cast<int64_t>(
+        DecimalFunctions::decimalToDouble(size) * MarketConstants::kMicrosharesPerShare);
 }

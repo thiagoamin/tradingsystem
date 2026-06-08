@@ -3,8 +3,8 @@
 Contract OrionTradingContract::makeUsEquity(const std::string &symbol)
 {
     Contract c;
-    c.symbol = symbol;
-    c.secType = "STK";
+    c.symbol   = symbol;
+    c.secType  = "STK";
     c.exchange = "SMART"; // Routes across major US exchanges
     c.currency = "USD";
     return c;

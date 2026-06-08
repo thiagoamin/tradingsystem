@@ -1,11 +1,11 @@
 #include "InstrumentMarketState.h"
+
 #include "BarBuilder.h"
 
-InstrumentMarketState::InstrumentMarketState(InstrumentId id) : instrumentId_(id),
-                                                                bucketId_15s_(-1),
-                                                                latestQuote_{},
-                                                                hasNewQuote_(false),
-                                                                activeBucket_{} {}
+InstrumentMarketState::InstrumentMarketState(InstrumentId id)
+  : instrumentId_(id), bucketId_15s_(-1), latestQuote_{}, hasNewQuote_(false), activeBucket_{}
+{
+}
 
 void InstrumentMarketState::onTick(const TradeTick &tick)
 {
@@ -31,7 +31,8 @@ void InstrumentMarketState::onTick(const TradeTick &tick)
         bucketId_15s_ = currId;
     }
 
-    // 3. Add quote to bucket quote variables if we get new quote or if new tick, but empty bucket quote
+    // 3. Add quote to bucket quote variables if we get new quote or if new tick, but empty bucket
+    // quote
     if (hasNewQuote_ || activeBucket_.isQuoteEmpty())
     {
         activeBucket_.addQuote(latestQuote_);

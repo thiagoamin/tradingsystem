@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include "market_data/InstrumentMarketState.h"
 
 static constexpr int64_t kB0 = 0LL;              // bucket 0: [0, 15s)
@@ -8,22 +9,22 @@ static constexpr int64_t kB2 = 30'000'000'000LL; // bucket 2: [30s, 45s)
 static TradeTick makeTick(int64_t ts_ns, double price = 100.0, int64_t size_us = 1'000'000)
 {
     TradeTick t{};
-    t.instrumentId = InstrumentId::SPY;
+    t.instrumentId         = InstrumentId::SPY;
     t.exchangeTimestamp_ns = ts_ns;
-    t.price = price;
-    t.size_us = size_us;
+    t.price                = price;
+    t.size_us              = size_us;
     return t;
 }
 
-static QuoteSnapshot makeQuote(double bid, double ask,
-                               int64_t bidSz = 100'000'000, int64_t askSz = 100'000'000)
+static QuoteSnapshot
+    makeQuote(double bid, double ask, int64_t bidSz = 100'000'000, int64_t askSz = 100'000'000)
 {
     QuoteSnapshot q{};
     q.instrumentId = InstrumentId::SPY;
-    q.bid = bid;
-    q.ask = ask;
-    q.bidSize_us = bidSz;
-    q.askSize_us = askSz;
+    q.bid          = bid;
+    q.ask          = ask;
+    q.bidSize_us   = bidSz;
+    q.askSize_us   = askSz;
     return q;
 }
 
@@ -76,13 +77,13 @@ TEST(InstrumentMarketStateTest, EmptyBucketNotEmitted)
 TEST(InstrumentMarketStateTest, BarMetadataIsCorrect)
 {
     InstrumentMarketState s(InstrumentId::AAPL);
-    TradeTick t = makeTick(kB0);
-    t.instrumentId = InstrumentId::AAPL;
+    TradeTick             t = makeTick(kB0);
+    t.instrumentId          = InstrumentId::AAPL;
     s.onTick(t);
-    TradeTick t2 = makeTick(14'000'000'000LL);
+    TradeTick t2    = makeTick(14'000'000'000LL);
     t2.instrumentId = InstrumentId::AAPL;
     s.onTick(t2);
-    TradeTick t3 = makeTick(kB1);
+    TradeTick t3    = makeTick(kB1);
     t3.instrumentId = InstrumentId::AAPL;
     s.onTick(t3);
     ASSERT_EQ(s.barCount(), 1u);

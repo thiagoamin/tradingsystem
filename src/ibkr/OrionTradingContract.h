@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Contract.h"
-
 #include <string>
+
+#include "Contract.h"
 class OrionTradingContract
 {
-public:
+   public:
     /* -------------------------------------------------------------------------- */
     /*                           Core Market Index ETFs                           */
     /* -------------------------------------------------------------------------- */
@@ -54,7 +54,7 @@ public:
      */
     static Contract AMZN();
 
-private:
+   private:
     /**
      * @brief Factory method to construct a standardized, SMART-routed US equity contract.
      *
