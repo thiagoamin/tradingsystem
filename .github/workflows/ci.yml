@@ -45,6 +45,8 @@ jobs:
         run: |
           cmake --preset dev
           cmake --build --preset dev
+        env:
+          LD_LIBRARY_PATH: ${{ github.workspace }}/third_party/ibkr_10.37/source/cppclient/client/lib
 
   run-test:
     name: Test Trading Engine
@@ -55,18 +57,29 @@ jobs:
         uses: actions/checkout@v4
       
       # TODO: replace with Docker container once set up
-      - name: Install dependencies
+      - name: Cache Protobuf
+        uses: actions/cache@v4
+        with:
+          path: /usr/local
+          key: protobuf-3.12.4
+
+      - name: Install Protobuf 3.12.4
         run: |
-          wget https://github.com/protocolbuffers/protobuf/releases/download/v3.12.4/protobuf-cpp-3.12.4.tar.gz
-          tar -xzf protobuf-cpp-3.12.4.tar.gz
-          cd protobuf-3.12.4
-          ./configure
-          make -j$(nproc)
-          sudo make install
-          sudo ldconfig
+          if ! protoc --version | grep -q "3.12.4"; then
+            wget https://github.com/protocolbuffers/protobuf/releases/download/v3.12.4/protobuf-cpp-3.12.4.tar.gz
+            tar -xzf protobuf-cpp-3.12.4.tar.gz
+            cd protobuf-3.12.4
+            ./configure
+            make -j$(nproc)
+            sudo make install
+            sudo ldconfig
+          fi
 
       - name: Build and run tests
         run: |
           cmake --preset test
           cmake --build --preset test
           cd build_test && ctest
+        env:
+          LD_LIBRARY_PATH: ${{ github.workspace }}/third_party/ibkr_10.37/source/cppclient/client/lib
+
