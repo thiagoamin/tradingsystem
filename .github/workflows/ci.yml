@@ -30,9 +30,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       
+      # TODO: replace with Docker container once set up
       - name: Install dependencies
         run: |
-          sudo apt-get install -y libprotobuf-dev=3.12.4-1 protobuf-compiler=3.12.4-1
+          wget https://github.com/protocolbuffers/protobuf/releases/download/v3.12.4/protobuf-cpp-3.12.4.tar.gz
+          tar -xzf protobuf-cpp-3.12.4.tar.gz
+          cd protobuf-3.12.4
+          ./configure
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
 
       - name: Build
         run: |
@@ -47,9 +54,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       
+      # TODO: replace with Docker container once set up
       - name: Install dependencies
         run: |
-          sudo apt-get install -y libprotobuf-dev=3.12.4-1 protobuf-compiler=3.12.4-1
+          wget https://github.com/protocolbuffers/protobuf/releases/download/v3.12.4/protobuf-cpp-3.12.4.tar.gz
+          tar -xzf protobuf-cpp-3.12.4.tar.gz
+          cd protobuf-3.12.4
+          ./configure
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
 
       - name: Build and run tests
         run: |
