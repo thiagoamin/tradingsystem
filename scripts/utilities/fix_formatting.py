@@ -6,7 +6,7 @@ import os
 INCLUDE_FILE_EXTENSIONS = (".cpp", ".h", ".hpp")
 
 # Ensure stable clang format version
-CLANG_FORMAT_VERSION = "clang-format-17"
+CLANG_FORMAT_VERSION = "clang-format-22"
 
 def _get_platform() -> str:
     """
@@ -21,11 +21,11 @@ def _get_platform() -> str:
 
 def _get_clang_binary(platform_sys: str) -> str:
     if platform_sys == "windows":
-        return "clang-format-17.exe"
+        return "clang-format-22.exe"
     elif platform_sys == "mac":
         return "clang-format"
     else:
-        return "clang-format-17"
+        return "clang-format-22"
 
     
 def find_files( path_from_root: str) -> list[str]:
