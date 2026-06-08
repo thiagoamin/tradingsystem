@@ -9,8 +9,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install clang-format
-        run: sudo apt-get install -y clang-format-22
+      - name: Set up Clang 22
+        uses: egor-tensin/setup-clang@v2
+        with:
+          version: '22'
+          platform: 'x64'
+
 
       - name: Format code
         run: python3 scripts/utilities/fix_formatting.py
