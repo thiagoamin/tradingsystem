@@ -13,7 +13,7 @@ jobs:
         run: sudo apt-get install -y clang-format-17
 
       - name: Format code
-        run: python3 utilities/fix_formatting.py
+        run: python3 scripts/utilities/fix_formatting.py
 
       - name: Check for differences
         run: git --no-pager diff --color --exit-code
