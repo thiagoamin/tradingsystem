@@ -1,6 +1,7 @@
 name: Project Orion CI
 on:
   pull_request:
+
 jobs:
   clang-format:
     name: Check C++ Code Format
@@ -15,7 +16,6 @@ jobs:
           version: '22'
           platform: 'x64'
 
-
       - name: Format code
         run: python3 scripts/utilities/fix_formatting.py
 
@@ -29,43 +29,17 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
-      # TODO: replace with Docker container once set up
-      - name: Install dependencies
-        run: |
-          wget https://github.com/protocolbuffers/protobuf/releases/download/v3.12.4/protobuf-cpp-3.12.4.tar.gz
-          tar -xzf protobuf-cpp-3.12.4.tar.gz
-          cd protobuf-3.12.4
-          ./configure
-          make -j$(nproc)
-          sudo make install
-          sudo ldconfig
 
-      - name: Build
-        run: |
-          cmake --preset dev
-          cmake --build --preset dev
-        env:
-          LD_LIBRARY_PATH: ${{ github.workspace }}/third_party/ibkr_10.37/source/cppclient/client/lib
-
-  run-test:
-    name: Test Trading Engine
-    runs-on: ubuntu-latest
-    needs: [clang-format]
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      
       # TODO: replace with Docker container once set up
-      - name: Cache Protobuf
+      - name: Cache dependencies
         uses: actions/cache@v4
         with:
           path: /usr/local
-          key: protobuf-3.12.4
+          key: deps-protobuf-3.12.4-libbid
 
       - name: Install Protobuf 3.12.4
         run: |
-          if ! protoc --version | grep -q "3.12.4"; then
+          if ! protoc --version 2>/dev/null | grep -q "3.12.4"; then
             wget https://github.com/protocolbuffers/protobuf/releases/download/v3.12.4/protobuf-cpp-3.12.4.tar.gz
             tar -xzf protobuf-cpp-3.12.4.tar.gz
             cd protobuf-3.12.4
@@ -75,11 +49,37 @@ jobs:
             sudo ldconfig
           fi
 
+      - name: Build libbid
+        run: |
+          if [ ! -f /usr/local/lib/libbid.a ]; then
+            git clone https://github.com/xmake-mirror/IntelRDFPMathLib
+            cd IntelRDFPMathLib/LIBRARY
+            make CC=gcc
+            sudo cp libbid.a /usr/local/lib/
+          fi
+
+      - name: Build
+        run: |
+          cmake --preset dev
+          cmake --build --preset dev
+
+  run-test:
+    name: Test Trading Engine
+    runs-on: ubuntu-latest
+    needs: [build-dev]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # TODO: replace with Docker container once set up
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: /usr/local
+          key: deps-protobuf-3.12.4-libbid
+
       - name: Build and run tests
         run: |
           cmake --preset test
           cmake --build --preset test
           cd build_test && ctest
-        env:
-          LD_LIBRARY_PATH: ${{ github.workspace }}/third_party/ibkr_10.37/source/cppclient/client/lib
-
