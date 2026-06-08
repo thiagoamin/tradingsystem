@@ -15,43 +15,43 @@ struct FeatureBar
 {
     /* -------------------------------- Metadata -------------------------------- */
     InstrumentId instrumentId;
-    int64_t barId;
+    int64_t      barId;
 
-    int64_t startTimeStamp_ns;  ///< UNIX epoch nanoseconds
-    int64_t endTimeStamp_ns;    ///< UNIX epoch nanoseconds
+    int64_t startTimeStamp_ns; ///< UNIX epoch nanoseconds
+    int64_t endTimeStamp_ns;   ///< UNIX epoch nanoseconds
     int64_t interval_ns;
 
     /* ----------------------------- Quote Features ----------------------------- */
-    double bidClose;             // b_a,t
-    double askClose;             // a_a,t
+    double  bidClose;            // b_a,t
+    double  askClose;            // a_a,t
     int64_t bidSizeClose_us;     // B_a,t
     int64_t askSizeClose_us;     // A_a,t
-    double midpointClose;        // m_a,t
-    double spreadClose;          // s_a,t
-    double spreadBptsClose;      // s^bps_a,t
-    double quoteImbalanceClose;  // Imb_a,t
-    double microPriceClose;      // μ_a,t
-    double microPriceDevClose;   // MP_a,t
+    double  midpointClose;       // m_a,t
+    double  spreadClose;         // s_a,t
+    double  spreadBptsClose;     // s^bps_a,t
+    double  quoteImbalanceClose; // Imb_a,t
+    double  microPriceClose;     // μ_a,t
+    double  microPriceDevClose;  // MP_a,t
 
     // Extra data
     double bidAvg;
     double askAvg;
-    double midpointAvg;        // m_a,t
-    double spreadAvg;          // s_a,t
-    double spreadBptsAvg;      // s^bps_a,t
-    double quoteImbalanceAvg;  // Imb_a,t
-    double microPriceAvg;      // μ_a,t
-    double microPriceDevAvg;   // MP_a,t
+    double midpointAvg;       // m_a,t
+    double spreadAvg;         // s_a,t
+    double spreadBptsAvg;     // s^bps_a,t
+    double quoteImbalanceAvg; // Imb_a,t
+    double microPriceAvg;     // μ_a,t
+    double microPriceDevAvg;  // MP_a,t
 
     /* ------------------------------ Trade Derived ----------------------------- */
-    int32_t tradeCount;         // N^T_a,t,h
-    int64_t unsignedVolume_us;  // V^T_a,t,h
-    int64_t signedVolume_us;    // V^T_a,t,h * ϵ_a,k
-    double dollarVolume_us;     // DV^T_a,t,h
+    int32_t tradeCount;        // N^T_a,t,h
+    int64_t unsignedVolume_us; // V^T_a,t,h
+    int64_t signedVolume_us;   // V^T_a,t,h * ϵ_a,k
+    double  dollarVolume_us;   // DV^T_a,t,h
 
-    double vwap;     ///< volume weighted average price
-    double svi;      ///< signed volume imbalance
-    double vwapGap;  ///< requires valid quote
+    double vwap;    ///< volume weighted average price
+    double svi;     ///< signed volume imbalance
+    double vwapGap; ///< requires valid quote
 
     /* ------------------------------- OHLC/debug ------------------------------- */
     double open;

@@ -32,6 +32,16 @@
 			"command": "build",
 			"preset": "test",
 			"group": "build"
+		},
+		{
+			"label": "Format C++ CodeCode 🍭",
+			"type": "shell",
+			"command": "python3 scripts/utilities/fix_formatting.py",
+			"group": "build",
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared"
+			}
 		}
 	]
 }

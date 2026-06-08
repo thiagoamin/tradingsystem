@@ -8,8 +8,12 @@
 class TestWrapper : public DefaultEWrapper
 {
    public:
-    void error(int id, time_t errorTime, int errorCode, const std::string& errorString,
-               const std::string& advancedOrderRejectJson) override
+    void error(
+        int                id,
+        time_t             errorTime,
+        int                errorCode,
+        const std::string &errorString,
+        const std::string &advancedOrderRejectJson) override
     {
         if (errorCode == 2104 || errorCode == 2106 || errorCode == 2158)
         {
@@ -33,13 +37,13 @@ class TestWrapper : public DefaultEWrapper
 
 int main()
 {
-    TestWrapper wrapper;
+    TestWrapper     wrapper;
     EReaderOSSignal signal(2000);
-    EClientSocket client(&wrapper, &signal);
+    EClientSocket   client(&wrapper, &signal);
 
-    const char* host = "127.0.0.1";
-    int port = 7497;
-    int clientId = 0;
+    const char *host     = "127.0.0.1";
+    int         port     = 7497;
+    int         clientId = 0;
 
     if (!client.eConnect(host, port, clientId))
     {

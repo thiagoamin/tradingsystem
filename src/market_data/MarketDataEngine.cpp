@@ -1,6 +1,6 @@
 #include "MarketDataEngine.h"
 
-void MarketDataEngine::onTradeTick(const TradeTick& tick)
+void MarketDataEngine::onTradeTick(const TradeTick &tick)
 {
     // Try to emplace. If tick.instrumentId isn't found, it constructs an
     // InstrumentMarketState passing tick.instrumentId as the constructor argument to make
@@ -9,7 +9,7 @@ void MarketDataEngine::onTradeTick(const TradeTick& tick)
     it->second.onTick(tick);
 };
 
-void MarketDataEngine::onQuoteSample(const QuoteSnapshot& quote)
+void MarketDataEngine::onQuoteSample(const QuoteSnapshot &quote)
 {
     auto [it, _] = instrumentStates_.try_emplace(quote.instrumentId, quote.instrumentId);
     it->second.onQuote(quote);

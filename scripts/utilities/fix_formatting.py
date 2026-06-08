@@ -3,7 +3,6 @@ import subprocess
 import os
 
 # Format C/C++ files
-
 INCLUDE_FILE_EXTENSIONS = (".cpp", ".h", ".hpp")
 
 # Ensure stable clang format version
@@ -33,7 +32,7 @@ def find_files( path_from_root: str) -> list[str]:
       # Prepare path to recursive traverse
     SOURCE_DIR = os.path.join("..", "..", path_from_root)
 
-    print("Finding files under " + os.path.join(os.getcwd(), SOURCE_DIR) + ":")
+    print("Finding files under " + os.path.join(os.getcwd(), SOURCE_DIR) + " 🗂️")
 
     files = []
     for root, dirnames, filenames in os.walk(SOURCE_DIR):
@@ -45,6 +44,7 @@ def find_files( path_from_root: str) -> list[str]:
     return files
 
 def run_clang_format(base_cmd: list[str], source_files: list[str]) -> bool:
+    print("Running clang formatting ⚙️")
     try:
         return subprocess.run(base_cmd + source_files).returncode == 0
     except KeyboardInterrupt:
@@ -60,13 +60,13 @@ def fix_formatting() -> None:
 
     files = find_files("src") # main cpp trading logic directory
     if not files:
-        print("No files found.")
+        print("No files found ❌")
         sys.exit(1)
 
     if (run_clang_format([clang, "-i", "--style=file"], files)):
-        print("SUCCESS: formatted " + platform + " files")
+        print("SUCCESS: formatted " + platform + " files ✅")
     else:
-        print("ERROR: clang format run failed")
+        print("ERROR: clang format run failed ❌")
      
 
 if __name__ == "__main__":

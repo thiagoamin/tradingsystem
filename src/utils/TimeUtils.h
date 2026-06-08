@@ -15,7 +15,7 @@
 
 namespace TimeUtils
 {
-constexpr int64_t kNanosecondsPerSecond = 1'000'000'000LL;  // k = constants
+constexpr int64_t kNanosecondsPerSecond = 1'000'000'000LL; // k = constants
 
 /**
  * @brief Monotonic clock tracking duration since an unspecified epoch (system boot).
@@ -42,4 +42,4 @@ inline int64_t wall_time_ns()
                std::chrono::system_clock::now().time_since_epoch())
         .count();
 }
-}  // namespace TimeUtils
+} // namespace TimeUtils

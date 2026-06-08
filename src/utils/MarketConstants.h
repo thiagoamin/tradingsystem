@@ -21,4 +21,4 @@ namespace MarketConstants
  */
 constexpr int64_t kMicrosharesPerShare = 1'000'000;
 
-}  // namespace MarketConstants
+} // namespace MarketConstants

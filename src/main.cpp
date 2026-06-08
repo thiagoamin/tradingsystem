@@ -4,15 +4,15 @@
 #include "market_data/MarketDataEngine.h"
 
 const unsigned MAX_ATTEMPTS = 5;
-const unsigned SLEEP_TIME = 3;
+const unsigned SLEEP_TIME   = 3;
 
 int main()
 {
     MarketDataEngine marketDataEngine;
-    IbkrClient client(marketDataEngine);
-    const char* host = "127.0.0.1";
-    int port = 7497;
-    int clientId = 0;
+    IbkrClient       client(marketDataEngine);
+    const char      *host     = "127.0.0.1";
+    int              port     = 7497;
+    int              clientId = 0;
 
     unsigned attempt = 0;
 

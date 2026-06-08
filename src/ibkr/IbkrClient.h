@@ -61,7 +61,7 @@ class IbkrClient : public DefaultEWrapper
      *
      * @param engine Reference to the central market data processing engine.
      */
-    IbkrClient(MarketDataEngine& engine);
+    IbkrClient(MarketDataEngine &engine);
 
     /**
      * @brief Disconnects from IBKR.
@@ -78,7 +78,7 @@ class IbkrClient : public DefaultEWrapper
      * @return true     If connection was successfully established.
      * @return false    If the connection failed (e.g., timeout, invalid host).
      */
-    bool connect(const char* host, int port, int clientId);
+    bool connect(const char *host, int port, int clientId);
 
     /**
      * @brief Disconnects connection from IBKR.
@@ -128,8 +128,12 @@ class IbkrClient : public DefaultEWrapper
      * @param advancedOrderRejectJson  Structured JSON containing detailed rejection metadata for
      * advanced orders.
      */
-    void error(int id, time_t errorTime, int errorCode, const std::string& errorString,
-               const std::string& advancedOrderRejectJson) override;
+    void error(
+        int                id,
+        time_t             errorTime,
+        int                errorCode,
+        const std::string &errorString,
+        const std::string &advancedOrderRejectJson) override;
     /**
      * @brief Receives market data price updates (e.g., Bid, Ask, Last) for a subscription and
      * awaits tickSize for the full cached Quote Data (tickPrice and tickSize callback occur roughly
@@ -141,8 +145,8 @@ class IbkrClient : public DefaultEWrapper
      * @param attribs   Extra metadata flags regarding the price update (e.g., pre-open, past
      * limit).
      */
-    void tickPrice(TickerId tickerId, TickType field, double price,
-                   const TickAttrib& attribs) override;
+    void tickPrice(TickerId tickerId, TickType field, double price, const TickAttrib &attribs)
+        override;
 
     /**
      * @brief Receives market data size updates (e.g., Bid Size, Ask Size) for a subscription
@@ -166,9 +170,15 @@ class IbkrClient : public DefaultEWrapper
      * @param exchange           The venue where the trade occurred.
      * @param specialConditions  Additional condition modifiers attached to the trade print.
      */
-    void tickByTickAllLast(int reqId, int tickType, time_t time, double price, Decimal size,
-                           const TickAttribLast& tickAttribLast, const std::string& exchange,
-                           const std::string& specialConditions) override;
+    void tickByTickAllLast(
+        int                   reqId,
+        int                   tickType,
+        time_t                time,
+        double                price,
+        Decimal               size,
+        const TickAttribLast &tickAttribLast,
+        const std::string    &exchange,
+        const std::string    &specialConditions) override;
     /**
      * @brief Called when the network socket connection to TWS/Gateway is dropped.
      *
@@ -176,21 +186,21 @@ class IbkrClient : public DefaultEWrapper
     void connectionClosed() override;
 
    private:
-    MarketDataEngine&
-        marketDataEngine_;      ///< Reference to the engine handling order books and data feeds.
-    EReaderOSSignal osSignal_;  ///< Condition variable signaling when raw network packets arrive.
+    MarketDataEngine
+        &marketDataEngine_;    ///< Reference to the engine handling order books and data feeds.
+    EReaderOSSignal osSignal_; ///< Condition variable signaling when raw network packets arrive.
     std::unique_ptr<EClientSocket>
-        pClientSocket_;  ///< Unique ownership over the active IBKR socket connection.
+        pClientSocket_; ///< Unique ownership over the active IBKR socket connection.
     std::unique_ptr<EReader>
-        pReader_;  ///< Unique ownership over the asynchronous network packet reader.
+        pReader_; ///< Unique ownership over the asynchronous network packet reader.
 
     std::unordered_map<TickerId, InstrumentId>
-        reqIdToInstrumentId_;  ///< Maps IBKR request IDs to InstrumentId enum.
+        reqIdToInstrumentId_; ///< Maps IBKR request IDs to InstrumentId enum.
     std::unordered_map<InstrumentId, QuoteSnapshot>
-        quote_cache_;  ///< Local cache storing the latest Level 1 quotes per instrument.
-    STATE state_;      ///< Current phase of the client's connection finite state machine.
-    OrderId orderId_;  ///< The next valid, sequential order ID tracked for execution.
-    bool subscribed_;  ///< Track if active market data subscriptions have been initialized.
+            quote_cache_; ///< Local cache storing the latest Level 1 quotes per instrument.
+    STATE   state_;       ///< Current phase of the client's connection finite state machine.
+    OrderId orderId_;     ///< The next valid, sequential order ID tracked for execution.
+    bool    subscribed_;  ///< Track if active market data subscriptions have been initialized.
 
     /* -------------------------------------------------------------------------- */
     /*                               Helper Functions                             */
@@ -217,7 +227,7 @@ class IbkrClient : public DefaultEWrapper
      * @param contract      The physical asset criteria specifying target exchange and instrument
      * symbols.
      */
-    void reqQuoteData(TickerId reqId, InstrumentId instrumentId, const Contract& contract);
+    void reqQuoteData(TickerId reqId, InstrumentId instrumentId, const Contract &contract);
 
     /**
      * @brief Subscribes to comprehensive granular tick-by-tick historical execution feeds.
@@ -227,7 +237,7 @@ class IbkrClient : public DefaultEWrapper
      * @param contract      The physical asset criteria specifying target exchange and instrument
      * symbols.
      */
-    void reqTickByTickData(TickerId reqId, InstrumentId instrumentId, const Contract& contract);
+    void reqTickByTickData(TickerId reqId, InstrumentId instrumentId, const Contract &contract);
 
     /**
      * @brief Converts an IBKR API fixed-point Decimal size object down to regular micro-shares (1

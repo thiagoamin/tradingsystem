@@ -8,7 +8,7 @@
 class BarBuilder
 {
    public:
-    BarBuilder(int64_t& barId);
+    BarBuilder(int64_t &barId);
 
     void build();
 

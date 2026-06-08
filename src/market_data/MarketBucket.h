@@ -43,14 +43,14 @@ class MarketBucket
      *
      * @param tick   Inbound trade execution print.
      */
-    void addTick(const TradeTick& tick);
+    void addTick(const TradeTick &tick);
 
     /**
      * @brief Aggregates the most recent top-of-book context.
      *
      * @param quote Most recent quote snapshot.
      */
-    void addQuote(const QuoteSnapshot& quote);
+    void addQuote(const QuoteSnapshot &quote);
 
     /**
      * @brief Processes accumulated data in market bucket to compile a finalized FeatureBar.
@@ -86,43 +86,43 @@ class MarketBucket
    private:
     /* -------------------------- Bucket Time Interval -------------------------- */
     int64_t startTimeStamp_ns_ = 0;
-    int64_t endTimeStamp_ns_ = 0;
+    int64_t endTimeStamp_ns_   = 0;
 
     /* ---------------------------- Trade Aggregates ---------------------------- */
-    int64_t tradeCount_ = 0;
-    double priceTotal_ = 0.0;
+    int64_t tradeCount_        = 0;
+    double  priceTotal_        = 0.0;
     int64_t unsignedVolume_us_ = 0;
-    int64_t signedVolume_us_ = 0;
-    double dollarVolume_us_ = 0.0;
+    int64_t signedVolume_us_   = 0;
+    double  dollarVolume_us_   = 0.0;
 
     /* ---------------------------------- Quote --------------------------------- */
     int64_t quoteCount_ = 0;
 
-    double latestBid_ = 0.0;
-    double latestAsk_ = 0.0;
-    int64_t latestBidSize_us_ = 0;  // 1 share = 1,000,000 micro shares
+    double  latestBid_        = 0.0;
+    double  latestAsk_        = 0.0;
+    int64_t latestBidSize_us_ = 0; // 1 share = 1,000,000 micro shares
     int64_t latestAskSize_us_ = 0;
 
-    double bidTotal_ = 0.0;
-    double askTotal_ = 0.0;
-    int64_t bidSizeTotal_us_ = 0;  // 1 share = 1,000,000 micro shares
+    double  bidTotal_        = 0.0;
+    double  askTotal_        = 0.0;
+    int64_t bidSizeTotal_us_ = 0; // 1 share = 1,000,000 micro shares
     int64_t askSizeTotal_us_ = 0;
 
     /* ---------------------------------- OHLC ---------------------------------- */
-    double open_ = 0.0;
-    double high_ = 0.0;
-    double low_ = 0.0;
+    double open_  = 0.0;
+    double high_  = 0.0;
+    double low_   = 0.0;
     double close_ = 0.0;
 
     /* ----------------------- Running variance (Welford) ----------------------- */
     double priceMeanRunning_ = 0.0;
-    double priceM2_ = 0.0;
+    double priceM2_          = 0.0;
 
     double sizeMeanRunning_us_ = 0.0;
-    double sizeM2_us_ = 0.0;
+    double sizeM2_us_          = 0.0;
 
     /* ------------------------------- Raw samples ------------------------------ */
-    std::vector<double> prices_;
+    std::vector<double>  prices_;
     std::vector<int64_t> sizes_us_;
 
     bool hasValidQuote() const;

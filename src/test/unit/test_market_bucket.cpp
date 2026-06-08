@@ -7,9 +7,9 @@
 static TradeTick makeTick(double price, int64_t size_us, int64_t ts_ns = 0)
 {
     TradeTick t{};
-    t.instrumentId = InstrumentId::SPY;
-    t.price = price;
-    t.size_us = size_us;
+    t.instrumentId         = InstrumentId::SPY;
+    t.price                = price;
+    t.size_us              = size_us;
     t.exchangeTimestamp_ns = ts_ns;
     return t;
 }
@@ -18,10 +18,10 @@ static QuoteSnapshot makeQuote(double bid, double ask, int64_t bidSize_us, int64
 {
     QuoteSnapshot q{};
     q.instrumentId = InstrumentId::SPY;
-    q.bid = bid;
-    q.ask = ask;
-    q.bidSize_us = bidSize_us;
-    q.askSize_us = askSize_us;
+    q.bid          = bid;
+    q.ask          = ask;
+    q.bidSize_us   = bidSize_us;
+    q.askSize_us   = askSize_us;
     return q;
 }
 
@@ -67,10 +67,10 @@ TEST(MarketBucketTest, OhlcSingleTick)
 TEST(MarketBucketTest, OhlcMultipleTicks)
 {
     MarketBucket b;
-    b.addTick(makeTick(100.0, 1'000'000, 1000));  // open
-    b.addTick(makeTick(200.0, 1'000'000, 2000));  // high
-    b.addTick(makeTick(50.0, 1'000'000, 3000));   // low
-    b.addTick(makeTick(120.0, 1'000'000, 4000));  // close
+    b.addTick(makeTick(100.0, 1'000'000, 1000)); // open
+    b.addTick(makeTick(200.0, 1'000'000, 2000)); // high
+    b.addTick(makeTick(50.0, 1'000'000, 3000));  // low
+    b.addTick(makeTick(120.0, 1'000'000, 4000)); // close
     FeatureBar bar = b.build(InstrumentId::SPY, 0);
     EXPECT_DOUBLE_EQ(bar.open, 100.0);
     EXPECT_DOUBLE_EQ(bar.high, 200.0);
@@ -83,7 +83,8 @@ TEST(MarketBucketTest, OhlcMultipleTicks)
 TEST(MarketBucketTest, TradeCount)
 {
     MarketBucket b;
-    for (int i = 0; i < 5; ++i) b.addTick(makeTick(100.0, 1'000'000));
+    for (int i = 0; i < 5; ++i)
+        b.addTick(makeTick(100.0, 1'000'000));
     EXPECT_EQ(b.build(InstrumentId::SPY, 0).tradeCount, 5);
 }
 
@@ -177,7 +178,7 @@ TEST(MarketBucketTest, BuildOnEmptyBucketIsZeroSafe)
 {
     // build() on empty bucket must not crash or divide by zero
     MarketBucket b;
-    FeatureBar bar = b.build(InstrumentId::SPY, 0);
+    FeatureBar   bar = b.build(InstrumentId::SPY, 0);
     EXPECT_EQ(bar.tradeCount, 0);
     EXPECT_DOUBLE_EQ(bar.priceMean, 0.0);
     EXPECT_DOUBLE_EQ(bar.vwap, 0.0);
