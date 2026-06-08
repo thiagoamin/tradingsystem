@@ -34,7 +34,10 @@ jobs:
       - name: Cache dependencies
         uses: actions/cache@v4
         with:
-          path: /usr/local
+          path: |
+            /usr/local/lib/libprotobuf*
+            /usr/local/lib/libbid.a
+            /usr/local/include/google
           key: deps-protobuf-3.12.4-libbid
 
       - name: Install Protobuf 3.12.4
