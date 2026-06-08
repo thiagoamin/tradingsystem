@@ -15,4 +15,5 @@
   "cmake.configureOnOpen": false,
   "cmake.ctest.allowParallelJobs": true,
   "testMate.cpp.test.executables": "${workspaceFolder}/build_test/src/test/*_tests",
+  "C_Cpp.clang_format_style": "file"
 }

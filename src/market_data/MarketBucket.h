@@ -17,11 +17,12 @@
  *
  */
 
-#include "events/TradeTick.h"
-#include "events/QuoteSnapshot.h"
-#include "events/FeatureBar.h"
-#include "core/InstrumentId.h"
 #include <vector>
+
+#include "core/InstrumentId.h"
+#include "events/FeatureBar.h"
+#include "events/QuoteSnapshot.h"
+#include "events/TradeTick.h"
 
 /**
  * @brief Statistical bucket tracking raw data slices.
@@ -31,7 +32,7 @@
  */
 class MarketBucket
 {
-public:
+   public:
     /**
      * @brief Constructs an empty market data bucket and reserves sample storage.
      */
@@ -42,14 +43,14 @@ public:
      *
      * @param tick   Inbound trade execution print.
      */
-    void addTick(const TradeTick &tick);
+    void addTick(const TradeTick& tick);
 
     /**
      * @brief Aggregates the most recent top-of-book context.
      *
      * @param quote Most recent quote snapshot.
      */
-    void addQuote(const QuoteSnapshot &quote);
+    void addQuote(const QuoteSnapshot& quote);
 
     /**
      * @brief Processes accumulated data in market bucket to compile a finalized FeatureBar.
@@ -82,7 +83,7 @@ public:
      */
     bool isQuoteEmpty() const;
 
-private:
+   private:
     /* -------------------------- Bucket Time Interval -------------------------- */
     int64_t startTimeStamp_ns_ = 0;
     int64_t endTimeStamp_ns_ = 0;
@@ -99,12 +100,12 @@ private:
 
     double latestBid_ = 0.0;
     double latestAsk_ = 0.0;
-    int64_t latestBidSize_us_ = 0; // 1 share = 1,000,000 micro shares
+    int64_t latestBidSize_us_ = 0;  // 1 share = 1,000,000 micro shares
     int64_t latestAskSize_us_ = 0;
 
     double bidTotal_ = 0.0;
     double askTotal_ = 0.0;
-    int64_t bidSizeTotal_us_ = 0; // 1 share = 1,000,000 micro shares
+    int64_t bidSizeTotal_us_ = 0;  // 1 share = 1,000,000 micro shares
     int64_t askSizeTotal_us_ = 0;
 
     /* ---------------------------------- OHLC ---------------------------------- */

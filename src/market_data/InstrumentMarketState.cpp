@@ -1,13 +1,13 @@
 #include "InstrumentMarketState.h"
+
 #include "BarBuilder.h"
 
-InstrumentMarketState::InstrumentMarketState(InstrumentId id) : instrumentId_(id),
-                                                                bucketId_15s_(-1),
-                                                                latestQuote_{},
-                                                                hasNewQuote_(false),
-                                                                activeBucket_{} {}
+InstrumentMarketState::InstrumentMarketState(InstrumentId id)
+    : instrumentId_(id), bucketId_15s_(-1), latestQuote_{}, hasNewQuote_(false), activeBucket_{}
+{
+}
 
-void InstrumentMarketState::onTick(const TradeTick &tick)
+void InstrumentMarketState::onTick(const TradeTick& tick)
 {
     // !TODO: Update this later because feature bar will not push if new tick right after 15s comes
     int64_t currId = tick.exchangeTimestamp_ns / kFifteenSec_ns;
@@ -31,7 +31,8 @@ void InstrumentMarketState::onTick(const TradeTick &tick)
         bucketId_15s_ = currId;
     }
 
-    // 3. Add quote to bucket quote variables if we get new quote or if new tick, but empty bucket quote
+    // 3. Add quote to bucket quote variables if we get new quote or if new tick, but empty bucket
+    // quote
     if (hasNewQuote_ || activeBucket_.isQuoteEmpty())
     {
         activeBucket_.addQuote(latestQuote_);
@@ -42,7 +43,7 @@ void InstrumentMarketState::onTick(const TradeTick &tick)
     // TODO: log tick
 }
 
-void InstrumentMarketState::onQuote(const QuoteSnapshot &quote)
+void InstrumentMarketState::onQuote(const QuoteSnapshot& quote)
 {
     latestQuote_ = quote;
     hasNewQuote_ = true;

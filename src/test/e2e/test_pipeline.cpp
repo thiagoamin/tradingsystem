@@ -1,12 +1,13 @@
 #include <gtest/gtest.h>
+
 #include "market_data/MarketDataEngine.h"
 
 static constexpr int64_t kB0 = 0LL;
 static constexpr int64_t kB1 = 15'000'000'000LL;
 static constexpr int64_t kB2 = 30'000'000'000LL;
 
-static TradeTick makeTick(InstrumentId id, int64_t ts_ns,
-                          double price = 100.0, int64_t size_us = 1'000'000)
+static TradeTick makeTick(InstrumentId id, int64_t ts_ns, double price = 100.0,
+                          int64_t size_us = 1'000'000)
 {
     TradeTick t{};
     t.instrumentId = id;
@@ -51,9 +52,9 @@ TEST(PipelineTest, TwoInstrumentsRoutedIndependently)
     MarketDataEngine engine;
     engine.onTradeTick(makeTick(InstrumentId::SPY, kB0));
     engine.onTradeTick(makeTick(InstrumentId::QQQ, kB0));
-    engine.onTradeTick(makeTick(InstrumentId::SPY, kB1)); // SPY bar 0 emitted
-    engine.onTradeTick(makeTick(InstrumentId::QQQ, kB1)); // QQQ bar 0 emitted
-    engine.onTradeTick(makeTick(InstrumentId::SPY, kB2)); // SPY bar 1 emitted
+    engine.onTradeTick(makeTick(InstrumentId::SPY, kB1));  // SPY bar 0 emitted
+    engine.onTradeTick(makeTick(InstrumentId::QQQ, kB1));  // QQQ bar 0 emitted
+    engine.onTradeTick(makeTick(InstrumentId::SPY, kB2));  // SPY bar 1 emitted
 
     const auto* spy = engine.getState(InstrumentId::SPY);
     const auto* qqq = engine.getState(InstrumentId::QQQ);
@@ -72,7 +73,7 @@ TEST(PipelineTest, QuoteRoutedToCorrectInstrument)
     const auto* state = engine.getState(InstrumentId::TSLA);
     ASSERT_NE(state, nullptr);
     ASSERT_EQ(state->barCount(), 1u);
-    EXPECT_DOUBLE_EQ(state->getBars()[0].spreadClose, 2.0); // 202 - 200
+    EXPECT_DOUBLE_EQ(state->getBars()[0].spreadClose, 2.0);  // 202 - 200
 }
 
 TEST(PipelineTest, QuoteForOneInstrumentDoesNotPollutAnother)

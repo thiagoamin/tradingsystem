@@ -6,8 +6,9 @@
  * @brief   Main interface for managing the connection and communication with Interactive Brokers.
  *
  * This module wraps the TWS/IB Gateway API, providing a state-driven client that
- * pushes market data updates to a MarketDataEngine instance. This helps bridge the layer between IBKR
- * and our trading system. Our trading system won't know IBKR specifics (data types, functions, etc.).
+ * pushes market data updates to a MarketDataEngine instance. This helps bridge the layer between
+ * IBKR and our trading system. Our trading system won't know IBKR specifics (data types, functions,
+ * etc.).
  *
  * @version 0.1
  * @date    2026-05-26
@@ -16,23 +17,23 @@
  *
  */
 
-#include "DefaultEWrapper.h"
-#include "EReaderOSSignal.h"
-#include "EReader.h"
-#include "EClientSocket.h"
-#include "events/TradeTick.h"
-#include "events/QuoteSnapshot.h"
-#include "market_data/MarketDataEngine.h"
-#include "core/InstrumentId.h"
-#include "Contract.h"
-#include "Decimal.h"
-
-#include <cstring>
 #include <cstdio>
+#include <cstring>
+#include <ctime>
 #include <memory>
 #include <string>
-#include <ctime>
 #include <unordered_map>
+
+#include "Contract.h"
+#include "Decimal.h"
+#include "DefaultEWrapper.h"
+#include "EClientSocket.h"
+#include "EReader.h"
+#include "EReaderOSSignal.h"
+#include "core/InstrumentId.h"
+#include "events/QuoteSnapshot.h"
+#include "events/TradeTick.h"
+#include "market_data/MarketDataEngine.h"
 
 /**
  *  @enum STATE
@@ -54,13 +55,13 @@ enum STATE
  */
 class IbkrClient : public DefaultEWrapper
 {
-public:
+   public:
     /**
      * @brief Construct a new IBKR Client object.
      *
      * @param engine Reference to the central market data processing engine.
      */
-    IbkrClient(MarketDataEngine &engine);
+    IbkrClient(MarketDataEngine& engine);
 
     /**
      * @brief Disconnects from IBKR.
@@ -77,7 +78,7 @@ public:
      * @return true     If connection was successfully established.
      * @return false    If the connection failed (e.g., timeout, invalid host).
      */
-    bool connect(const char *host, int port, int clientId);
+    bool connect(const char* host, int port, int clientId);
 
     /**
      * @brief Disconnects connection from IBKR.
@@ -119,31 +120,29 @@ public:
     /**
      * @brief Callback for handling system, connection, or order execution errors from IBKR.
      *
-     * @param id                       The request ID associated with the error (-1 indicates a system/connection notification).
+     * @param id                       The request ID associated with the error (-1 indicates a
+     * system/connection notification).
      * @param errorTime                The timestamp when the error occurred.
      * @param errorCode                The specific IBKR error code mapping to the failure reason.
      * @param errorString              The descriptive error message text.
-     * @param advancedOrderRejectJson  Structured JSON containing detailed rejection metadata for advanced orders.
+     * @param advancedOrderRejectJson  Structured JSON containing detailed rejection metadata for
+     * advanced orders.
      */
-    void error(int id,
-               time_t errorTime,
-               int errorCode,
-               const std::string &errorString,
-               const std::string &advancedOrderRejectJson) override;
+    void error(int id, time_t errorTime, int errorCode, const std::string& errorString,
+               const std::string& advancedOrderRejectJson) override;
     /**
      * @brief Receives market data price updates (e.g., Bid, Ask, Last) for a subscription and
-     * awaits tickSize for the full cached Quote Data (tickPrice and tickSize callback occur roughly every
-     * 250ms according to IBKR).
+     * awaits tickSize for the full cached Quote Data (tickPrice and tickSize callback occur roughly
+     * every 250ms according to IBKR).
      *
      * @param tickerId  The unique ID assigned to the data request.
      * @param field     The type of price field being updated (mapped via TickType enum).
      * @param price     The current price value.
-     * @param attribs   Extra metadata flags regarding the price update (e.g., pre-open, past limit).
+     * @param attribs   Extra metadata flags regarding the price update (e.g., pre-open, past
+     * limit).
      */
-    void tickPrice(TickerId tickerId,
-                   TickType field,
-                   double price,
-                   const TickAttrib &attribs) override;
+    void tickPrice(TickerId tickerId, TickType field, double price,
+                   const TickAttrib& attribs) override;
 
     /**
      * @brief Receives market data size updates (e.g., Bid Size, Ask Size) for a subscription
@@ -154,9 +153,7 @@ public:
      * @param field     The type of size field being updated (mapped via TickType enum).
      * @param size      The current size value wrapped in IBKR's Decimal type.
      */
-    void tickSize(TickerId tickerId,
-                  TickType field,
-                  Decimal size) override;
+    void tickSize(TickerId tickerId, TickType field, Decimal size) override;
     /**
      * @brief Receives real-time, tick-by-tick trade execution updates.
      *
@@ -169,45 +166,46 @@ public:
      * @param exchange           The venue where the trade occurred.
      * @param specialConditions  Additional condition modifiers attached to the trade print.
      */
-    void tickByTickAllLast(int reqId,
-                           int tickType,
-                           time_t time,
-                           double price,
-                           Decimal size,
-                           const TickAttribLast &tickAttribLast,
-                           const std::string &exchange,
-                           const std::string &specialConditions) override;
+    void tickByTickAllLast(int reqId, int tickType, time_t time, double price, Decimal size,
+                           const TickAttribLast& tickAttribLast, const std::string& exchange,
+                           const std::string& specialConditions) override;
     /**
      * @brief Called when the network socket connection to TWS/Gateway is dropped.
      *
      */
     void connectionClosed() override;
 
-private:
-    MarketDataEngine &marketDataEngine_;           ///< Reference to the engine handling order books and data feeds.
-    EReaderOSSignal osSignal_;                     ///< Condition variable signaling when raw network packets arrive.
-    std::unique_ptr<EClientSocket> pClientSocket_; ///< Unique ownership over the active IBKR socket connection.
-    std::unique_ptr<EReader> pReader_;             ///< Unique ownership over the asynchronous network packet reader.
+   private:
+    MarketDataEngine&
+        marketDataEngine_;      ///< Reference to the engine handling order books and data feeds.
+    EReaderOSSignal osSignal_;  ///< Condition variable signaling when raw network packets arrive.
+    std::unique_ptr<EClientSocket>
+        pClientSocket_;  ///< Unique ownership over the active IBKR socket connection.
+    std::unique_ptr<EReader>
+        pReader_;  ///< Unique ownership over the asynchronous network packet reader.
 
-    std::unordered_map<TickerId, InstrumentId> reqIdToInstrumentId_; ///< Maps IBKR request IDs to InstrumentId enum.
-    std::unordered_map<InstrumentId, QuoteSnapshot> quote_cache_;    ///< Local cache storing the latest Level 1 quotes per instrument.
-    STATE state_;                                                    ///< Current phase of the client's connection finite state machine.
-    OrderId orderId_;                                                ///< The next valid, sequential order ID tracked for execution.
-    bool subscribed_;                                                ///< Track if active market data subscriptions have been initialized.
+    std::unordered_map<TickerId, InstrumentId>
+        reqIdToInstrumentId_;  ///< Maps IBKR request IDs to InstrumentId enum.
+    std::unordered_map<InstrumentId, QuoteSnapshot>
+        quote_cache_;  ///< Local cache storing the latest Level 1 quotes per instrument.
+    STATE state_;      ///< Current phase of the client's connection finite state machine.
+    OrderId orderId_;  ///< The next valid, sequential order ID tracked for execution.
+    bool subscribed_;  ///< Track if active market data subscriptions have been initialized.
 
     /* -------------------------------------------------------------------------- */
     /*                               Helper Functions                             */
     /* -------------------------------------------------------------------------- */
 
     /**
-     * @brief Processes the local network socket event loop queue and dispatches payloads to EWrapper callbacks.
+     * @brief Processes the local network socket event loop queue and dispatches payloads to
+     * EWrapper callbacks.
      *
      */
     void processMessages();
 
     /**
-     * @brief Executes the initial baseline data subscriptions across target instrument (stock) registries.
-     * Identifier: (1000s for quote, 20000s for trade).
+     * @brief Executes the initial baseline data subscriptions across target instrument (stock)
+     * registries. Identifier: (1000s for quote, 20000s for trade).
      */
     void subscribe();
 
@@ -216,21 +214,24 @@ private:
      *
      * @param reqId         A newly generated, unique subscription tracking handle (1000s).
      * @param instrumentId  The destination internal tracking identifier based on InstrumentId enum.
-     * @param contract      The physical asset criteria specifying target exchange and instrument symbols.
+     * @param contract      The physical asset criteria specifying target exchange and instrument
+     * symbols.
      */
-    void reqQuoteData(TickerId reqId, InstrumentId instrumentId, const Contract &contract);
+    void reqQuoteData(TickerId reqId, InstrumentId instrumentId, const Contract& contract);
 
     /**
      * @brief Subscribes to comprehensive granular tick-by-tick historical execution feeds.
      *
      * @param reqId         A newly generated, unique subscription tracking handle (20000s).
      * @param instrumentId  The destination internal tracking identifier based on InstrumentId enum.
-     * @param contract      The physical asset criteria specifying target exchange and instrument symbols.
+     * @param contract      The physical asset criteria specifying target exchange and instrument
+     * symbols.
      */
-    void reqTickByTickData(TickerId reqId, InstrumentId instrumentId, const Contract &contract);
+    void reqTickByTickData(TickerId reqId, InstrumentId instrumentId, const Contract& contract);
 
     /**
-     * @brief Converts an IBKR API fixed-point Decimal size object down to regular micro-shares (1 share = 1,000,000 micro-shares).
+     * @brief Converts an IBKR API fixed-point Decimal size object down to regular micro-shares (1
+     * share = 1,000,000 micro-shares).
      *
      * @param size  The incoming platform abstraction data container value.
      * @return      Integer representation scaled in millionths of a share (or basic volume count).

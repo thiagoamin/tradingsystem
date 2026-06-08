@@ -1,7 +1,8 @@
 #pragma once
 
-#include <cstdint>
 #include <core/InstrumentId.h>
+
+#include <cstdint>
 
 using TickerId = long;
 
@@ -16,11 +17,12 @@ struct TradeTick
 {
     /* -------------------------------- Metadata -------------------------------- */
     InstrumentId instrumentId;
-    int64_t exchangeTimestamp_ns; ///< IBKR time_t * 1e9, coarse
+    int64_t exchangeTimestamp_ns;  ///< IBKR time_t * 1e9, coarse
 
     ///< Latency profiling timstamps
-    int64_t recvSteadyTimestamp_ns; ///< High-resolution local monotonic CPU clock tick upon socket ingress in ns.
-    int64_t recvWallTimestamp_ns;   ///< Real-world system clock time (UNIX epoch ns) upon arrival
+    int64_t recvSteadyTimestamp_ns;  ///< High-resolution local monotonic CPU clock tick upon socket
+                                     ///< ingress in ns.
+    int64_t recvWallTimestamp_ns;    ///< Real-world system clock time (UNIX epoch ns) upon arrival
 
     /* ----------------------------- Transaction State --------------------------- */
     double price;

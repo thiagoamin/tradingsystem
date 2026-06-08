@@ -16,13 +16,13 @@
  *
  */
 
-#include "events/TradeTick.h"
-#include "events/QuoteSnapshot.h"
-#include "events/FeatureBar.h"
-#include "market_data/MarketBucket.h"
-#include "core/InstrumentId.h"
-
 #include <vector>
+
+#include "core/InstrumentId.h"
+#include "events/FeatureBar.h"
+#include "events/QuoteSnapshot.h"
+#include "events/TradeTick.h"
+#include "market_data/MarketBucket.h"
 
 /**
  * @brief State container and aggregator for a single instrument's market data.
@@ -32,7 +32,7 @@
  */
 class InstrumentMarketState
 {
-public:
+   public:
     static constexpr int64_t kFifteenSec_ns = 15'000'000'000LL;
 
     /**
@@ -47,27 +47,29 @@ public:
      *
      * @param tick The raw execution tick data.
      */
-    void onTick(const TradeTick &tick);
+    void onTick(const TradeTick& tick);
 
     /**
      * @brief Caches the latest top-of-book snapshot and recalculates microstructural indicators.
      * @param quote The raw quote snapshot.
      */
-    void onQuote(const QuoteSnapshot &quote);
+    void onQuote(const QuoteSnapshot& quote);
 
-private:
+   private:
     InstrumentId instrumentId_;
 
-    QuoteSnapshot latestQuote_; ///< Cached recent quote snapshot.
+    QuoteSnapshot latestQuote_;  ///< Cached recent quote snapshot.
     bool hasNewQuote_;
 
-    int64_t bucketId_15s_;      ///< Current bucket Id
-    MarketBucket activeBucket_; ///< Current raw sub-window accumulation container for data filtering.
+    int64_t bucketId_15s_;  ///< Current bucket Id
+    MarketBucket
+        activeBucket_;  ///< Current raw sub-window accumulation container for data filtering.
 
-    std::vector<FeatureBar> bars_15s_; ///< Historical storage array of finalized 15-second intervals used for Strategy.
+    std::vector<FeatureBar> bars_15s_;  ///< Historical storage array of finalized 15-second
+                                        ///< intervals used for Strategy.
 
-public:
+   public:
     // getters for testing
-    const std::vector<FeatureBar> &getBars() const { return bars_15s_; }
+    const std::vector<FeatureBar>& getBars() const { return bars_15s_; }
     size_t barCount() const { return bars_15s_.size(); }
 };

@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Contract.h"
-
 #include <string>
+
+#include "Contract.h"
 class OrionTradingContract
 {
-public:
+   public:
     /* -------------------------------------------------------------------------- */
     /*                           Core Market Index ETFs                           */
     /* -------------------------------------------------------------------------- */
@@ -54,12 +54,12 @@ public:
      */
     static Contract AMZN();
 
-private:
+   private:
     /**
      * @brief Factory method to construct a standardized, SMART-routed US equity contract.
      *
      * @param symbol The ticker symbol of the asset (e.g., "AAPL").
      * @return       Fully configured IBKR Contract object pinned to USD and stock asset types.
      */
-    static Contract makeUsEquity(const std::string &symbol);
+    static Contract makeUsEquity(const std::string& symbol);
 };

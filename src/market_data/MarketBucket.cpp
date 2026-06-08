@@ -1,4 +1,5 @@
 #include "MarketBucket.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -8,7 +9,7 @@ MarketBucket::MarketBucket()
     sizes_us_.reserve(4096);
 }
 
-void MarketBucket::addTick(const TradeTick &tick)
+void MarketBucket::addTick(const TradeTick& tick)
 {
     // OHLC
     if (tradeCount_ == 0)
@@ -61,7 +62,7 @@ void MarketBucket::addTick(const TradeTick &tick)
     sizeM2_us_ += sizeDelta * sizeDelta2;
 }
 
-void MarketBucket::addQuote(const QuoteSnapshot &quote)
+void MarketBucket::addQuote(const QuoteSnapshot& quote)
 {
     // quote
     quoteCount_++;
@@ -112,11 +113,9 @@ FeatureBar MarketBucket::build(InstrumentId id, int64_t bucketId) const
         bar.priceMean = priceTotal_ / tradeCount_;
         bar.sizeMean_us = static_cast<double>(unsignedVolume_us_) / tradeCount_;
 
-        bar.priceStdev =
-            std::sqrt(priceM2_ / tradeCount_);
+        bar.priceStdev = std::sqrt(priceM2_ / tradeCount_);
 
-        bar.sizeStdev_us =
-            std::sqrt(sizeM2_us_ / tradeCount_);
+        bar.sizeStdev_us = std::sqrt(sizeM2_us_ / tradeCount_);
 
         // TODO, do this better
         auto sortedPrices = prices_;
@@ -165,46 +164,30 @@ FeatureBar MarketBucket::build(InstrumentId id, int64_t bucketId) const
         bar.spreadClose = spreadClose;
         bar.spreadAvg = spreadAvg;
 
-        bar.spreadBptsClose =
-            10'000LL * (spreadClose) / midpointClose;
-        bar.spreadBptsAvg =
-            10'000LL * (spreadAvg) / midpointAvg;
+        bar.spreadBptsClose = 10'000LL * (spreadClose) / midpointClose;
+        bar.spreadBptsAvg = 10'000LL * (spreadAvg) / midpointAvg;
 
-        bar.quoteImbalanceClose =
-            static_cast<double>(
-                latestBidSize_us_ - latestAskSize_us_) /
-            (latestBidSize_us_ + latestAskSize_us_);
-        bar.quoteImbalanceAvg =
-            (bidSizeAvg - askSizeAvg) /
-            (bidSizeAvg + askSizeAvg);
+        bar.quoteImbalanceClose = static_cast<double>(latestBidSize_us_ - latestAskSize_us_) /
+                                  (latestBidSize_us_ + latestAskSize_us_);
+        bar.quoteImbalanceAvg = (bidSizeAvg - askSizeAvg) / (bidSizeAvg + askSizeAvg);
 
-        bar.microPriceClose =
-            (latestAsk_ * latestBidSize_us_ +
-             latestBid_ * latestAskSize_us_) /
-            (latestAskSize_us_ + latestBidSize_us_);
-        bar.microPriceAvg =
-            (askAvg * bidSizeAvg +
-             bidAvg * askSizeAvg) /
-            (askSizeAvg + bidSizeAvg);
+        bar.microPriceClose = (latestAsk_ * latestBidSize_us_ + latestBid_ * latestAskSize_us_) /
+                              (latestAskSize_us_ + latestBidSize_us_);
+        bar.microPriceAvg = (askAvg * bidSizeAvg + bidAvg * askSizeAvg) / (askSizeAvg + bidSizeAvg);
 
         if (spreadClose != 0.0)
         {
-            bar.microPriceDevClose =
-                (bar.microPriceClose - midpointClose) /
-                (spreadClose);
+            bar.microPriceDevClose = (bar.microPriceClose - midpointClose) / (spreadClose);
         }
         if (spreadAvg != 0.0)
         {
-            bar.microPriceDevAvg =
-                (bar.microPriceAvg - midpointAvg) /
-                (spreadAvg);
+            bar.microPriceDevAvg = (bar.microPriceAvg - midpointAvg) / (spreadAvg);
         }
 
         // trade derived
         if (midpointClose != 0.0)
         {
-            bar.vwapGap =
-                (bar.vwap - midpointClose) / midpointClose;
+            bar.vwapGap = (bar.vwap - midpointClose) / midpointClose;
         }
     }
 
@@ -238,20 +221,11 @@ void MarketBucket::clear()
     prices_.clear();
     sizes_us_.clear();
 }
-bool MarketBucket::isEmpty() const
-{
-    return tradeCount_ == 0;
-}
+bool MarketBucket::isEmpty() const { return tradeCount_ == 0; }
 
 bool MarketBucket::hasValidQuote() const
 {
-    return latestBid_ > 0.0 &&
-           latestAsk_ > 0.0 &&
-           latestBidSize_us_ > 0 &&
-           latestAskSize_us_ > 0;
+    return latestBid_ > 0.0 && latestAsk_ > 0.0 && latestBidSize_us_ > 0 && latestAskSize_us_ > 0;
 }
 
-bool MarketBucket::isQuoteEmpty() const
-{
-    return quoteCount_ == 0;
-}
+bool MarketBucket::isQuoteEmpty() const { return quoteCount_ == 0; }
