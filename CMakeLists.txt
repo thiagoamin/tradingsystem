@@ -13,6 +13,9 @@ message(STATUS "🛜 Protobuf include dirs: ${Protobuf_INCLUDE_DIRS}")
 message(STATUS "🛜 Protobuf libraries: ${Protobuf_LIBRARIES}")
 message(STATUS "🛜 Protobuf version: ${Protobuf_VERSION}")
 
+# spdlog
+add_subdirectory(third_party/spdlog)
+
 set(IBKR_CLIENT_DIR
    "${CMAKE_SOURCE_DIR}/third_party/ibkr_10.37/source/cppclient/client"
 )
@@ -71,8 +74,8 @@ if ("${TARGET}" STREQUAL "binary")
         "${CMAKE_SOURCE_DIR}/third_party/ibkr_10.37/source/cppclient/client/lib"
     )
 
+    target_link_libraries(projectorion PRIVATE spdlog::spdlog protobuf::libprotobuf bid)
     target_link_libraries(ibkr_connect_test PRIVATE protobuf::libprotobuf bid)
-    target_link_libraries(projectorion PRIVATE protobuf::libprotobuf bid)
 
 elseif ("${TARGET}" STREQUAL "test")
     enable_testing()

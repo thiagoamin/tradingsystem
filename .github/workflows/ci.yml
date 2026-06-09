@@ -51,6 +51,11 @@ jobs:
             sudo make install
             sudo ldconfig
           fi
+      
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Build libbid
         run: |
@@ -94,6 +99,10 @@ jobs:
             sudo make install
             sudo ldconfig
           fi
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Build libbid
         run: |
