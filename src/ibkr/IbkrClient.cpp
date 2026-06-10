@@ -363,7 +363,7 @@ bool IbkrClient::isMarketDataError(int code)
            code == IbkrErrorCodes::DELAYED_NOT_ENABLED;
 }
 
-void IbkrClient::handleConnectionError(int errorCode, std::string &errorString)
+void IbkrClient::handleConnectionError(int errorCode, const std::string &errorString)
 {
     // Connection lost, trigger reconnect
     if (errorCode == IbkrErrorCodes::CONNECTION_LOST || errorCode == IbkrErrorCodes::PORT_RESET ||
@@ -390,10 +390,10 @@ void IbkrClient::handleConnectionError(int errorCode, std::string &errorString)
 }
 
 void IbkrClient::handleOrderError(
-    int          id,
-    int          errorCode,
-    std::string &errorString,
-    std::string &advancedOrderRejectJson)
+    int                id,
+    int                errorCode,
+    const std::string &errorString,
+    const std::string &advancedOrderRejectJson)
 {
     // Order errors, important for order management
     if (errorCode == IbkrErrorCodes::ORDER_REJECTED)

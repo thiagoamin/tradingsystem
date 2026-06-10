@@ -256,7 +256,7 @@ class IbkrClient : public DefaultEWrapper
      * @return true If code is informational
      * @return false If code is not informational
      */
-    bool IbkrClient::isInformational(int code);
+    bool isInformational(int code);
 
     /**
      * @brief Check if errorCode is a connection related
@@ -265,7 +265,7 @@ class IbkrClient : public DefaultEWrapper
      * @return true If code is a connection error
      * @return false If code is not a connection error
      */
-    bool IbkrClient::isConnectionError(int code);
+    bool isConnectionError(int code);
 
     /**
      * @brief Check if errorCode is an order related
@@ -274,7 +274,7 @@ class IbkrClient : public DefaultEWrapper
      * @return true If code is an order error
      * @return false If code is not an order error
      */
-    bool IbkrClient::isOrderError(int code);
+    bool isOrderError(int code);
 
     /**
      * @brief Check if errorCode is market data related
@@ -283,7 +283,7 @@ class IbkrClient : public DefaultEWrapper
      * @return true If code is a market data error
      * @return false If code is not a market data error
      */
-    bool IbkrClient::isMarketDataError(int code);
+    bool isMarketDataError(int code);
 
     /**
      * @brief
@@ -291,7 +291,7 @@ class IbkrClient : public DefaultEWrapper
      * @param errorCode
      * @param errorString
      */
-    void handleConnectionError(int errorCode, std::string &errorString);
+    void handleConnectionError(int errorCode, const std::string &errorString);
 
     /**
      * @brief
@@ -302,8 +302,8 @@ class IbkrClient : public DefaultEWrapper
      * @param advancedOrderRejectJson
      */
     void handleOrderError(
-        int          id,
-        int          errorCode,
-        std::string &errorString,
-        std::string &advancedOrderRejectJson);
+        int                id,
+        int                errorCode,
+        const std::string &errorString,
+        const std::string &advancedOrderRejectJson);
 };
