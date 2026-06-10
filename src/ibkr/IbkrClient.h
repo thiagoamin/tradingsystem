@@ -30,6 +30,7 @@
 #include "EClientSocket.h"
 #include "EReader.h"
 #include "EReaderOSSignal.h"
+#include "ibkr/IbkrErrorCodes.h"
 #include "core/InstrumentId.h"
 #include "events/QuoteSnapshot.h"
 #include "events/TradeTick.h"
@@ -247,4 +248,62 @@ class IbkrClient : public DefaultEWrapper
      * @return      Integer representation scaled in millionths of a share (or basic volume count).
      */
     int64_t convertDecimalToMicroShares(Decimal size);
+
+    /**
+     * @brief Check if errorCode is informational
+     *
+     * @param code is the errorCode given by Ibkr error() callback
+     * @return true If code is informational
+     * @return false If code is not informational
+     */
+    bool IbkrClient::isInformational(int code);
+
+    /**
+     * @brief Check if errorCode is a connection related
+     *
+     * @param code is the errorCode given by Ibkr error() callback
+     * @return true If code is a connection error
+     * @return false If code is not a connection error
+     */
+    bool IbkrClient::isConnectionError(int code);
+
+    /**
+     * @brief Check if errorCode is an order related
+     *
+     * @param code is the errorCode given by Ibkr error() callback
+     * @return true If code is an order error
+     * @return false If code is not an order error
+     */
+    bool IbkrClient::isOrderError(int code);
+
+    /**
+     * @brief Check if errorCode is market data related
+     *
+     * @param code is the errorCode given by Ibkr error() callback
+     * @return true If code is a market data error
+     * @return false If code is not a market data error
+     */
+    bool IbkrClient::isMarketDataError(int code);
+
+    /**
+     * @brief
+     *
+     * @param errorCode
+     * @param errorString
+     */
+    void handleConnectionError(int errorCode, std::string &errorString);
+
+    /**
+     * @brief
+     *
+     * @param id
+     * @param errorCode
+     * @param errorString
+     * @param advancedOrderRejectJson
+     */
+    void handleOrderError(
+        int          id,
+        int          errorCode,
+        std::string &errorString,
+        std::string &advancedOrderRejectJson);
 };

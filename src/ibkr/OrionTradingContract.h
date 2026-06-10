@@ -3,6 +3,7 @@
 #include <string>
 
 #include "Contract.h"
+
 class OrionTradingContract
 {
    public:

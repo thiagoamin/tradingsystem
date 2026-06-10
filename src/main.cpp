@@ -1,5 +1,6 @@
 #include <thread>
 #include <format>
+#include <filesystem>
 #include <spdlog/async.h>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/rotating_file_sink.h>
@@ -13,6 +14,17 @@ const unsigned SLEEP_TIME   = 3;
 
 int main()
 {
+    // Initialize time ET
+    TimeUtils::init();
+
+    // Initialize logger
+    spdlog::init_thread_pool(8192, 1);
+    std::filesystem::create_directories("logs");
+    std::string log_path = std::format("logs/orion_{}.log", TimeUtils::getCurrentDate());
+    auto        logger   = spdlog::create_async<spdlog::sinks::rotating_file_sink_mt>(
+        "orion", log_path, 1024 * 1024 * 10, 3); // mutex but not on hot path, runs async
+    spdlog::set_default_logger(logger);
+
     // Initialize market data engine and client
     MarketDataEngine marketDataEngine;
     IbkrClient       client(marketDataEngine);
@@ -20,25 +32,12 @@ int main()
     int              port     = 7497;
     int              clientId = 0;
 
-    // Initialize time ET
-    TimeUtils::init();
-
     unsigned attempt = 0;
-
-    // Initialize logger
-    std::string log_path = std::format("logs/orion_{}.log", getCurrentDate());
-
-    // Start SPD logger
-    auto logger = spdlog::create_async<spdlog::sinks::rotating_file_sink_mt>(
-        "orion", log_path, 1024 * 1024 * 10, 3); // mutex but not on hot path, runs async
-    spdlog::set_default_logger(logger);
 
     for (;;)
     {
         ++attempt;
-        spdlog::info(
-            "Connection attempt {}/{} | client: {}, host: {}, port: {}", attempt, MAX_ATTEMPTS,
-            clientId, host, port);
+        spdlog::info("Attempt number {}/{}", attempt, MAX_ATTEMPTS);
 
         client.connect(host, port, clientId);
 
@@ -58,7 +57,7 @@ int main()
         std::this_thread::sleep_for(std::chrono::seconds(SLEEP_TIME));
     }
 
-    spdlog::info("End of Session");
+    spdlog::warn("Max attempts reached, ending session");
 
     return 0;
 }
