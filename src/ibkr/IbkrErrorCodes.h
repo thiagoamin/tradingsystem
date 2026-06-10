@@ -21,4 +21,5 @@ constexpr int DELAYED_NOT_ENABLED  = 10186;
 // Informational range
 constexpr int INFO_MIN = 2100;
 constexpr int INFO_MAX = 2200;
-} 
+
+} // namespace IbkrErrorCodes
