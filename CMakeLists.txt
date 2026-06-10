@@ -1,10 +1,10 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.20)
 
 message(STATUS "⚙️ Configuring Live Testing")
 
 project(projectorion LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Protobuf REQUIRED)
@@ -12,6 +12,9 @@ find_package(Protobuf REQUIRED)
 message(STATUS "🛜 Protobuf include dirs: ${Protobuf_INCLUDE_DIRS}")
 message(STATUS "🛜 Protobuf libraries: ${Protobuf_LIBRARIES}")
 message(STATUS "🛜 Protobuf version: ${Protobuf_VERSION}")
+
+# spdlog
+add_subdirectory(third_party/spdlog)
 
 set(IBKR_CLIENT_DIR
    "${CMAKE_SOURCE_DIR}/third_party/ibkr_10.37/source/cppclient/client"
@@ -71,8 +74,8 @@ if ("${TARGET}" STREQUAL "binary")
         "${CMAKE_SOURCE_DIR}/third_party/ibkr_10.37/source/cppclient/client/lib"
     )
 
+    target_link_libraries(projectorion PRIVATE spdlog::spdlog protobuf::libprotobuf bid)
     target_link_libraries(ibkr_connect_test PRIVATE protobuf::libprotobuf bid)
-    target_link_libraries(projectorion PRIVATE protobuf::libprotobuf bid)
 
 elseif ("${TARGET}" STREQUAL "test")
     enable_testing()

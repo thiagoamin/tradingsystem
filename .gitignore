@@ -13,6 +13,7 @@ venv/
 # Build
 /build_dev
 /build_test
+/build
 
 # OS
 .DS_Store

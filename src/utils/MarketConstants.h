@@ -13,12 +13,8 @@
 
 namespace MarketConstants
 {
-/**
- * @brief Conversion factor used to scale raw physical equity shares into integer micro-shares.
- *
- * @note Eliminates floating-point rounding errors during high-frequency volume aggregations
- * and guarantees exact representation of fractional retail trade quantities.
- */
+// Conversion factor used to scale raw physical equity shares into integer micro-shares to eliminate
+// floating-point rounding errors
 constexpr int64_t kMicrosharesPerShare = 1'000'000;
 
 } // namespace MarketConstants

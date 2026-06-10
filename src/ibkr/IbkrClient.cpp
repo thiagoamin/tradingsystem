@@ -1,6 +1,7 @@
 #include "IbkrClient.h"
 
 #include <iostream>
+#include <spdlog/spdlog.h>
 
 #include "OrionTradingContract.h"
 #include "TagValue.h"
@@ -26,41 +27,47 @@ IbkrClient::~IbkrClient()
 bool IbkrClient::connect(const char *host, int port, int clientId)
 {
     state_ = CONNECT;
+    spdlog::info("Waiting for IBKR session initialization...\n");
 
     // TODO: Connection retry
     // 1. Log attempt to connect
-    printf(
-        "Connecting to %s:%d clientId:%d\n", !(host && *host) ? "127.0.0.1" : host, port, clientId);
+    spdlog::info(
+        "Connecting to {}:{} clientId:{}", !(host && *host) ? "127.0.0.1" : host, port, clientId);
 
     // 2. Connection attempt
     bool ok = pClientSocket_->eConnect(host, port, clientId);
 
     if (ok)
     {
-        printf(
-            "Successfully connected to %s:%d clientId:%d serverVersion: %d\n",
+        spdlog::info(
+            "Successfully connected to {}:{} clientId:{} serverVersion:{}",
             pClientSocket_->host().c_str(), pClientSocket_->port(), clientId,
             pClientSocket_->EClient::serverVersion());
 
         pReader_ =
             std::make_unique<EReader>(pClientSocket_.get(), &osSignal_); // Construct object now
-        pReader_->start();
+
+        pReader_->start(); ///< Start Thread #1: parses socket
     }
     else
-        printf(
-            "Failed to connect to %s:%d clientId:%d\n", pClientSocket_->host().c_str(),
+    {
+        spdlog::warn(
+            "Failed to connect to {}:{} clientId:{}", pClientSocket_->host().c_str(),
             pClientSocket_->port(), clientId);
+    }
 
     return ok;
 }
+
 void IbkrClient::disconnect()
 {
     if (isConnected())
     {
         pClientSocket_->eDisconnect();
-        std::cout << "Disconnected from IBKR\n";
+        spdlog::info("Disconnect from IBKR");
     }
 }
+
 bool IbkrClient::isConnected() const
 {
     return pClientSocket_ && pClientSocket_->isConnected();
@@ -74,7 +81,6 @@ void IbkrClient::run()
     switch (state_)
     {
         case CONNECT:
-            printf("Waiting for IBKR session initialization...\n");
             break;
         case RUN:
             break;
@@ -87,7 +93,7 @@ void IbkrClient::run()
 
 void IbkrClient::connectAck()
 {
-    std::cout << "Connect ACK\n";
+    spdlog::info("Connect ACK");
     pClientSocket_->startApi();
 };
 
@@ -95,17 +101,16 @@ void IbkrClient::connectAck()
 void IbkrClient::nextValidId(OrderId orderId)
 {
     orderId_ = orderId;
-    std::cout << "Next valid order id: " << orderId_ << "\n";
+    spdlog::info("Next valid order id: {}", orderId);
 
     if (!subscribed_)
     {
         subscribe();
-        subscribed_ = true;
     }
 
-    // TODO make no error occured to be in the RUN state
     state_ = RUN;
 };
+
 void IbkrClient::error(
     int                id,
     time_t             errorTime,
@@ -129,20 +134,31 @@ void IbkrClient::error(
         errorTimeStr[0] = '\0';
     }
 
-    if (!advancedOrderRejectJson.empty())
+    if (isInformational(errorCode))
     {
-        printf(
-            "Error. Id: %d, Time: %s, Code: %d, Msg: %s, AdvancedOrderRejectJson: %s\n", id,
-            errorTimeStr, errorCode, errorString.c_str(), advancedOrderRejectJson.c_str());
-    }
-    else
-    {
-        printf(
-            "Error. Id: %d, Time: %s, Code: %d, Msg: %s\n", id, errorTimeStr, errorCode,
-            errorString.c_str());
+        spdlog::info("IBKR notice | code:{} msg:{}", errorCode, errorString);
+        return;
     }
 
-    // TODO: Do more here
+    if (isConnectionError(errorCode))
+    {
+        handleConnectionError(errorCode, errorString);
+        return;
+    }
+
+    if (isOrderError(errorCode))
+    {
+        handleOrderError(id, errorCode, errorString, advancedOrderRejectJson);
+        return;
+    }
+
+    if (isMarketDataError(errorCode))
+    {
+        spdlog::warn("Market data issue | code:{} msg:{}", errorCode, errorString);
+        return;
+    }
+
+    spdlog::warn("IBKR | id:{} code:{} msg:{}", id, errorCode, errorString);
 }
 
 // IBKR Tick Price Updates
@@ -157,7 +173,7 @@ void IbkrClient::tickPrice(
     auto it = reqIdToInstrumentId_.find(tickerId);
     if (it == reqIdToInstrumentId_.end())
     {
-        printf("UNKNOWN ticker id");
+        spdlog::warn("Unknown ticker id: {}", tickerId);
         return;
     }
 
@@ -182,7 +198,7 @@ void IbkrClient::tickSize(TickerId tickerId, TickType field, Decimal size)
     auto it = reqIdToInstrumentId_.find(tickerId);
     if (it == reqIdToInstrumentId_.end())
     {
-        printf("UNKNOWN ticker id");
+        spdlog::warn("Unknown ticker id: {}", tickerId);
         return;
     }
 
@@ -223,7 +239,7 @@ void IbkrClient::tickByTickAllLast(
     auto it = reqIdToInstrumentId_.find(reqId);
     if (it == reqIdToInstrumentId_.end())
     {
-        printf("UNKNOWN ticker id");
+        spdlog::warn("Unknown ticker id: {}", reqId);
         return;
     }
 
@@ -236,14 +252,21 @@ void IbkrClient::tickByTickAllLast(
     event.price                  = price;
     event.size_us                = convertDecimalToMicroShares(size);
 
+    if (price <= 0 || event.size_us <= 0)
+    {
+        spdlog::warn(
+            "tickByTickAllLast bad data | reqId:{} price:{} size_us:{}", reqId, price,
+            event.size_us);
+        return;
+    }
+
     marketDataEngine_.onTradeTick(event);
 }
 
 void IbkrClient::connectionClosed()
 {
     // TODO: Do more here
-    std::cout << "Connection closed\n";
-
+    spdlog::warn("Connection closed");
     subscribed_ = false;
 }
 
@@ -252,14 +275,17 @@ void IbkrClient::processMessages()
 {
     // TODO: blocking logic, figure timing, threads, and etc. no hangups
     osSignal_.waitForSignal();
-    if (pReader_)
+    if (!pReader_)
     {
-        pReader_->processMsgs();
+        spdlog::warn("processMessages called but reader not initialized");
+        return;
     }
+    pReader_->processMsgs();
 }
 
 void IbkrClient::subscribe()
 {
+    spdlog::info("Setting market data type: 4 (delayed frozen)");
     pClientSocket_->reqMarketDataType(4);
 
     reqQuoteData(1001, InstrumentId::SPY, OrionTradingContract::SPY());
@@ -280,7 +306,8 @@ void IbkrClient::subscribe()
     reqTickByTickData(20007, InstrumentId::GOOGL, OrionTradingContract::GOOGL());
     reqTickByTickData(20008, InstrumentId::AMZN, OrionTradingContract::AMZN());
 
-    std::cout << "Requested market data for Project Orion instruments\n";
+    subscribed_ = true;
+    spdlog::info("Subscribed to market data for Project Orion instruments");
 }
 
 void IbkrClient::reqQuoteData(TickerId reqId, InstrumentId instrumentId, const Contract &contract)
@@ -310,4 +337,83 @@ int64_t IbkrClient::convertDecimalToMicroShares(Decimal size)
     // Won't be the bottle neck in latency
     return static_cast<int64_t>(
         DecimalFunctions::decimalToDouble(size) * MarketConstants::kMicrosharesPerShare);
+}
+
+bool IbkrClient::isInformational(int code)
+{
+    return code >= IbkrErrorCodes::INFO_MIN && code < IbkrErrorCodes::INFO_MAX;
+}
+
+bool IbkrClient::isConnectionError(int code)
+{
+    return code == IbkrErrorCodes::CONNECTION_LOST || code == IbkrErrorCodes::PORT_RESET ||
+           code == IbkrErrorCodes::NOT_CONNECTED ||
+           code == IbkrErrorCodes::CONNECTION_RESTORED_LOST ||
+           code == IbkrErrorCodes::CONNECTION_RESTORED_OK;
+}
+
+bool IbkrClient::isOrderError(int code)
+{
+    return code == IbkrErrorCodes::ORDER_REJECTED || code == IbkrErrorCodes::ORDER_CANCELLED;
+}
+
+bool IbkrClient::isMarketDataError(int code)
+{
+    return code == IbkrErrorCodes::NOT_SUBSCRIBED || code == IbkrErrorCodes::PARTIAL_SUBSCRIPTION ||
+           code == IbkrErrorCodes::DELAYED_NOT_ENABLED;
+}
+
+void IbkrClient::handleConnectionError(int errorCode, const std::string &errorString)
+{
+    // Connection lost, trigger reconnect
+    if (errorCode == IbkrErrorCodes::CONNECTION_LOST || errorCode == IbkrErrorCodes::PORT_RESET ||
+        errorCode == IbkrErrorCodes::NOT_CONNECTED)
+    {
+        spdlog::error("IBKR connection lost | code:{} msg:{}", errorCode, errorString);
+        state_ = ERROR;
+        return;
+    }
+
+    // Connection restored, resubscribe if data lost
+    if (errorCode == IbkrErrorCodes::CONNECTION_RESTORED_LOST)
+    {
+        spdlog::warn("IBKR reconnected, data lost - resubscribing | code:{}", errorCode);
+        subscribed_ = false;
+        return;
+    }
+
+    if (errorCode == IbkrErrorCodes::CONNECTION_RESTORED_OK)
+    {
+        spdlog::info("IBKR reconnected, data maintained | code:{}", errorCode);
+        return;
+    }
+}
+
+void IbkrClient::handleOrderError(
+    int                id,
+    int                errorCode,
+    const std::string &errorString,
+    const std::string &advancedOrderRejectJson)
+{
+    // Order errors, important for order management
+    if (errorCode == IbkrErrorCodes::ORDER_REJECTED)
+    {
+        if (!advancedOrderRejectJson.empty())
+        {
+            spdlog::error(
+                "Order rejected | id:{} msg:{} reject:{}", id, errorString,
+                advancedOrderRejectJson);
+        }
+        else
+        {
+            spdlog::error("Order rejected | id:{} msg:{}", id, errorString);
+        }
+        return;
+    }
+
+    if (errorCode == IbkrErrorCodes::ORDER_CANCELLED)
+    {
+        spdlog::warn("Order cancelled | id:{} msg:{}", id, errorString);
+        return;
+    }
 }

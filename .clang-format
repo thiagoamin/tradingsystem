@@ -44,6 +44,9 @@ PointerAlignment: Right
 NamespaceIndentation: Inner
 
 ReflowComments: true
+
+SeparateDefinitionBlocks: Always
+
 SortIncludes: Never
 SortUsingDeclarations: false
 
