@@ -37,7 +37,7 @@ int main()
     for (;;)
     {
         ++attempt;
-        spdlog::info("Attempt number {}/{}", attempt, MAX_ATTEMPTS);
+        spdlog::info("Starting session, attempt number {}/{}", attempt, MAX_ATTEMPTS);
 
         client.connect(host, port, clientId);
 
@@ -57,7 +57,8 @@ int main()
         std::this_thread::sleep_for(std::chrono::seconds(SLEEP_TIME));
     }
 
-    spdlog::warn("Max attempts reached, ending session");
+    spdlog::warn("Ending session");
+    spdlog::shutdown();
 
     return 0;
 }
