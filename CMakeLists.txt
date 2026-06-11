@@ -25,57 +25,65 @@ file(GLOB IBKR_CLIENT_SOURCES
 )
 
 file(GLOB IBKR_PROTO_SOURCES
-    "${CMAKE_SOURCE_DIR}/third_party/ibkr_10.37/source/cppclient/client/protobufUnix/*.cc"
+    "${IBKR_CLIENT_DIR}/protobufUnix/*.cc"
+)
+
+set(IBKR_INCLUDE_DIRS
+    "${IBKR_CLIENT_DIR}"
+    "${CMAKE_SOURCE_DIR}/third_party/ibkr_10.37/source/cppclient"
+    "${CMAKE_SOURCE_DIR}/third_party/ibkr_10.37/source"
+    "${IBKR_CLIENT_DIR}/protobufUnix"
+)
+
+add_library(ibkr_sdk STATIC
+    ${IBKR_CLIENT_SOURCES}
+    ${IBKR_PROTO_SOURCES}
+)
+
+target_include_directories(ibkr_sdk PUBLIC
+    ${IBKR_INCLUDE_DIRS}
+    ${Protobuf_INCLUDE_DIRS}
+)
+
+target_link_directories(ibkr_sdk PUBLIC
+    "${IBKR_CLIENT_DIR}/lib"
+)
+
+target_link_libraries(ibkr_sdk PUBLIC
+    protobuf::libprotobuf
+    bid
 )
 
 file(GLOB_RECURSE PROJECT_SOURCES
     "${CMAKE_SOURCE_DIR}/src/*.cpp"
 )
 
+list(FILTER PROJECT_SOURCES EXCLUDE REGEX ".*main\\.cpp$")
 list(FILTER PROJECT_SOURCES EXCLUDE REGEX ".*ibkr_connect_test\\.cpp$")
 list(FILTER PROJECT_SOURCES EXCLUDE REGEX ".*/test/.*\\.cpp$")
-
-set(IBKR_INCLUDE_DIRS
-    "${IBKR_CLIENT_DIR}"
-    "${CMAKE_SOURCE_DIR}/third_party/ibkr_10.37/source/cppclient"
-    "${CMAKE_SOURCE_DIR}/third_party/ibkr_10.37/source"
-    "${CMAKE_SOURCE_DIR}/third_party/ibkr_10.37/source/cppclient/client/protobufUnix"
-)
 
 if ("${TARGET}" STREQUAL "binary")
     add_executable(projectorion
         "${CMAKE_SOURCE_DIR}/src/main.cpp"
         ${PROJECT_SOURCES}
-        ${IBKR_CLIENT_SOURCES}
-        ${IBKR_PROTO_SOURCES}
     )
 
     target_include_directories(projectorion PRIVATE
         ${CMAKE_SOURCE_DIR}/src
-        ${IBKR_INCLUDE_DIRS}
-        ${Protobuf_INCLUDE_DIRS}
+    )
+
+    target_link_libraries(projectorion PRIVATE
+        spdlog::spdlog
+        ibkr_sdk
     )
 
     add_executable(ibkr_connect_test
         "${CMAKE_SOURCE_DIR}/src/ibkr_connect_test.cpp"
-        ${IBKR_CLIENT_SOURCES}
-        ${IBKR_PROTO_SOURCES}
     )
 
-    target_include_directories(ibkr_connect_test PRIVATE
-        ${IBKR_INCLUDE_DIRS}
-        ${Protobuf_INCLUDE_DIRS}
+    target_link_libraries(ibkr_connect_test PRIVATE
+        ibkr_sdk
     )
-
-    target_link_directories(ibkr_connect_test PRIVATE
-        "${CMAKE_SOURCE_DIR}/third_party/ibkr_10.37/source/cppclient/client/lib"
-    )
-    target_link_directories(projectorion PRIVATE
-        "${CMAKE_SOURCE_DIR}/third_party/ibkr_10.37/source/cppclient/client/lib"
-    )
-
-    target_link_libraries(projectorion PRIVATE spdlog::spdlog protobuf::libprotobuf bid)
-    target_link_libraries(ibkr_connect_test PRIVATE protobuf::libprotobuf bid)
 
 elseif ("${TARGET}" STREQUAL "test")
     enable_testing()
