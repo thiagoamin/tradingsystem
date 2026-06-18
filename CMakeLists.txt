@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-message(STATUS "⚙️ Configuring Live Testing")
+message(STATUS "⚙️  Configuring Trading System — TARGET: ${TARGET}")
 
 project(projectorion LANGUAGES CXX)
 
@@ -60,7 +60,6 @@ file(GLOB_RECURSE PROJECT_SOURCES
 
 list(FILTER PROJECT_SOURCES EXCLUDE REGEX ".*main\\.cpp$")
 list(FILTER PROJECT_SOURCES EXCLUDE REGEX ".*ibkr_connect_test\\.cpp$")
-list(FILTER PROJECT_SOURCES EXCLUDE REGEX ".*/test/.*\\.cpp$")
 
 if ("${TARGET}" STREQUAL "binary")
     add_executable(projectorion
@@ -87,7 +86,7 @@ if ("${TARGET}" STREQUAL "binary")
 
 elseif ("${TARGET}" STREQUAL "test")
     enable_testing()
-    add_subdirectory(src/test)
+    add_subdirectory(test)
 
 else()
     message(FATAL_ERROR "❌ Please set TARGET to 'binary' or 'test' using -DTARGET=<target>")
