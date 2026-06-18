@@ -24,13 +24,13 @@ add_executable(unit_tests
 target_include_directories(unit_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(unit_tests PRIVATE GTest::gtest_main)
 
-add_executable(e2e_tests
-    e2e/test_pipeline.cpp
+add_executable(integration_tests
+    integration/test_market_data_engine.cpp
     ${TESTABLE_SOURCES}
 )
-target_include_directories(e2e_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
-target_link_libraries(e2e_tests PRIVATE GTest::gtest_main)
+target_include_directories(integration_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(integration_tests PRIVATE GTest::gtest_main)
 
 include(GoogleTest)
 gtest_discover_tests(unit_tests)
-gtest_discover_tests(e2e_tests)
+gtest_discover_tests(integration_tests)
