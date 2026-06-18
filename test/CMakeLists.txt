@@ -10,16 +10,6 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-set(TESTABLE_SOURCES
-    ${CMAKE_SOURCE_DIR}/src/market_data/MarketBucket.cpp
-    ${CMAKE_SOURCE_DIR}/src/market_data/MarketDataEngine.cpp
-    ${CMAKE_SOURCE_DIR}/src/market_data/InstrumentMarketState.cpp
-    ${CMAKE_SOURCE_DIR}/src/market_data/BarBuilder.cpp
-)
-
-add_library(trading_lib STATIC ${TESTABLE_SOURCES})
-target_include_directories(trading_lib PUBLIC ${CMAKE_SOURCE_DIR}/src)
-
 add_executable(unit_tests
     unit/test_market_bucket.cpp
     unit/test_instrument_market_state.cpp
