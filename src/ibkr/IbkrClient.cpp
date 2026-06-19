@@ -9,8 +9,11 @@
 #include "utils/TimeUtils.h"
 
 // 2s to wait for signal before timeout
-IbkrClient::IbkrClient(MarketDataEngine &engine)
-  : marketDataEngine_(engine),
+IbkrClient::IbkrClient(
+    rigtorp::SPSCQueue<TradeTick>     &tickBuffer,
+    rigtorp::SPSCQueue<QuoteSnapshot> &quoteBuffer)
+  : tickBuffer_(tickBuffer),
+    quoteBuffer_(quoteBuffer),
     osSignal_(2000),
     pClientSocket_(std::make_unique<EClientSocket>(this, &osSignal_)),
     state_(CONNECT),
@@ -222,7 +225,7 @@ void IbkrClient::tickSize(TickerId tickerId, TickType field, Decimal size)
     // 3. Send quote to market data engine
     if (quote.bid > 0 && quote.ask > 0 && quote.bidSize_us > 0 && quote.askSize_us > 0)
     {
-        marketDataEngine_.onQuoteSample(quote);
+        quoteBuffer_.push(quote);
     }
 }
 
@@ -260,7 +263,7 @@ void IbkrClient::tickByTickAllLast(
         return;
     }
 
-    marketDataEngine_.onTradeTick(event);
+    tickBuffer_.push(event);
 }
 
 void IbkrClient::connectionClosed()

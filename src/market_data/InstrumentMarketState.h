@@ -33,8 +33,6 @@
 class InstrumentMarketState
 {
    public:
-    static constexpr int64_t kFifteenSec_ns = 15'000'000'000LL;
-
     /**
      * @brief Constructs an isolated state machine for a specific asset.
      *
@@ -55,13 +53,13 @@ class InstrumentMarketState
      */
     void onQuote(const QuoteSnapshot &quote);
 
+    void build(int64_t boundaryId);
+
    private:
     InstrumentId instrumentId_;
 
     QuoteSnapshot latestQuote_; ///< Cached recent quote snapshot.
     bool          hasNewQuote_;
-
-    int64_t bucketId_15s_; ///< Current bucket Id
     MarketBucket
         activeBucket_; ///< Current raw sub-window accumulation container for data filtering.
 
