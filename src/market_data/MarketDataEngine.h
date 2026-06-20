@@ -48,9 +48,9 @@ class MarketDataEngine
     void onQuoteSample(const QuoteSnapshot &quote);
 
     /**
-     * @brief
+     * @brief runs InstrumentMarketState build() for all of the instruments/stocks
      *
-     * @param id
+     * @param id bar ID for 15s bars
      */
     void flush(int64_t id);
 

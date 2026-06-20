@@ -35,6 +35,6 @@ void InstrumentMarketState::build(int64_t boundaryId)
         bars_15s_.push_back(currBar_15s);
     }
 
-    // 2. Clean up state every 15s to clear cached quote data
+    // 2. Clean up state every 15s to clear cached data
     activeBucket_.clear();
 }
