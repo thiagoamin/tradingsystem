@@ -14,3 +14,11 @@ void MarketDataEngine::onQuoteSample(const QuoteSnapshot &quote)
     auto [it, _] = instrumentStates_.try_emplace(quote.instrumentId, quote.instrumentId);
     it->second.onQuote(quote);
 }
+
+void MarketDataEngine::flush(int64_t id)
+{
+    for (auto &[_, state] : instrumentStates_)
+    {
+        state.build(id);
+    }
+}

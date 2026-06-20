@@ -47,6 +47,13 @@ class MarketDataEngine
      */
     void onQuoteSample(const QuoteSnapshot &quote);
 
+    /**
+     * @brief runs InstrumentMarketState build() for all of the instruments/stocks
+     *
+     * @param id bar ID for 15s bars
+     */
+    void flush(int64_t id);
+
    private:
     ///< State registry mapping instrument IDs to their data caches.
     std::unordered_map<InstrumentId, InstrumentMarketState> instrumentStates_;

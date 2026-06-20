@@ -36,6 +36,6 @@ The core architecture is:
 - `src/market_data` - market data ingestion
 - `src/execution` - where execution pipelines will lie
 - `src/core` - shared core logic between the layers
-- `src/test` - gtest unit testing logic and e2e testing
+- `src/test` - gtest unit testing logic and integration testing
 
 

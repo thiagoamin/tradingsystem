@@ -30,32 +30,35 @@ static QuoteSnapshot makeQuote(InstrumentId id, double bid, double ask)
 
 // ── Routing & bar emission ────────────────────────────────────────────────────
 
-TEST(PipelineTest, UnseenInstrumentReturnsNullptr)
+TEST(IntegrationTest, UnseenInstrumentReturnsNullptr)
 {
     MarketDataEngine engine;
     EXPECT_EQ(engine.getState(InstrumentId::NVDA), nullptr);
 }
 
-TEST(PipelineTest, SingleInstrumentBarEmittedAfterBoundary)
+TEST(IntegrationTest, SingleInstrumentBarEmittedAfterBoundary)
 {
     MarketDataEngine engine;
     engine.onTradeTick(makeTick(InstrumentId::SPY, kB0));
-    engine.onTradeTick(makeTick(InstrumentId::SPY, kB1));
+    engine.flush(0); // build 0 - 15s
+
+    // at t=15s
     const auto *state = engine.getState(InstrumentId::SPY);
     ASSERT_NE(state, nullptr);
     EXPECT_EQ(state->barCount(), 1u);
 }
 
-TEST(PipelineTest, TwoInstrumentsRoutedIndependently)
+TEST(IntegrationTest, TwoInstrumentsRoutedIndependently)
 {
     // SPY crosses 2 boundaries → 2 bars; QQQ crosses 1 → 1 bar
     MarketDataEngine engine;
     engine.onTradeTick(makeTick(InstrumentId::SPY, kB0));
     engine.onTradeTick(makeTick(InstrumentId::QQQ, kB0));
+    engine.flush(0);                                      // build 0 - 15s
     engine.onTradeTick(makeTick(InstrumentId::SPY, kB1)); // SPY bar 0 emitted
-    engine.onTradeTick(makeTick(InstrumentId::QQQ, kB1)); // QQQ bar 0 emitted
-    engine.onTradeTick(makeTick(InstrumentId::SPY, kB2)); // SPY bar 1 emitted
+    engine.flush(1);                                      // build 1 - 30s
 
+    // at t=30s
     const auto *spy = engine.getState(InstrumentId::SPY);
     const auto *qqq = engine.getState(InstrumentId::QQQ);
     ASSERT_NE(spy, nullptr);
@@ -64,24 +67,28 @@ TEST(PipelineTest, TwoInstrumentsRoutedIndependently)
     EXPECT_EQ(qqq->barCount(), 1u);
 }
 
-TEST(PipelineTest, QuoteRoutedToCorrectInstrument)
+TEST(IntegrationTest, QuoteRoutedToCorrectInstrument)
 {
     MarketDataEngine engine;
     engine.onQuoteSample(makeQuote(InstrumentId::TSLA, 200.0, 202.0));
-    engine.onTradeTick(makeTick(InstrumentId::TSLA, kB0, 201.0, 1'000'000));
-    engine.onTradeTick(makeTick(InstrumentId::TSLA, kB1));
+    engine.onTradeTick(makeTick(InstrumentId::TSLA, kB0, 201.0));
+    engine.flush(0); // build 0 - 15s
+
+    // at t=15s
     const auto *state = engine.getState(InstrumentId::TSLA);
     ASSERT_NE(state, nullptr);
     ASSERT_EQ(state->barCount(), 1u);
     EXPECT_DOUBLE_EQ(state->getBars()[0].spreadClose, 2.0); // 202 - 200
 }
 
-TEST(PipelineTest, QuoteForOneInstrumentDoesNotPollutAnother)
+TEST(IntegrationTest, QuoteForOneInstrumentDoesNotPollutAnother)
 {
     MarketDataEngine engine;
     engine.onQuoteSample(makeQuote(InstrumentId::SPY, 99.0, 101.0));
     engine.onTradeTick(makeTick(InstrumentId::QQQ, kB0));
-    engine.onTradeTick(makeTick(InstrumentId::QQQ, kB1));
+    engine.flush(0); // build 0 - 15s
+
+    // at t=15s
     const auto *qqq = engine.getState(InstrumentId::QQQ);
     ASSERT_NE(qqq, nullptr);
     ASSERT_EQ(qqq->barCount(), 1u);

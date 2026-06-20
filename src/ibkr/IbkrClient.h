@@ -23,6 +23,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include "rigtorp/SPSCQueue.h"
 
 #include "Contract.h"
 #include "Decimal.h"
@@ -58,11 +59,14 @@ class IbkrClient : public DefaultEWrapper
 {
    public:
     /**
-     * @brief Construct a new IBKR Client object.
+     * @brief Construct a new Ibkr Client object
      *
-     * @param engine Reference to the central market data processing engine.
+     * @param tickBuffer
+     * @param quoteBuffer
      */
-    IbkrClient(MarketDataEngine &engine);
+    IbkrClient(
+        rigtorp::SPSCQueue<TradeTick>     &tickBuffer,
+        rigtorp::SPSCQueue<QuoteSnapshot> &quoteBuffer);
 
     /**
      * @brief Disconnects from IBKR.
@@ -187,21 +191,20 @@ class IbkrClient : public DefaultEWrapper
     void connectionClosed() override;
 
    private:
-    MarketDataEngine
-        &marketDataEngine_;    ///< Reference to the engine handling order books and data feeds.
     EReaderOSSignal osSignal_; ///< Condition variable signaling when raw network packets arrive.
-    std::unique_ptr<EClientSocket>
-        pClientSocket_; ///< Unique ownership over the active IBKR socket connection.
-    std::unique_ptr<EReader>
-        pReader_; ///< Unique ownership over the asynchronous network packet reader.
-
-    std::unordered_map<TickerId, InstrumentId>
-        reqIdToInstrumentId_; ///< Maps IBKR request IDs to InstrumentId enum.
-    std::unordered_map<InstrumentId, QuoteSnapshot>
-            quote_cache_; ///< Local cache storing the latest Level 1 quotes per instrument.
-    STATE   state_;       ///< Current phase of the client's connection finite state machine.
-    OrderId orderId_;     ///< The next valid, sequential order ID tracked for execution.
-    bool    subscribed_;  ///< Track if active market data subscriptions have been initialized.
+    std::unique_ptr<EClientSocket> pClientSocket_;
+    ///< Unique ownership over the active IBKR socket connection.
+    std::unique_ptr<EReader> pReader_;
+    ///< Unique ownership over the asynchronous network packet reader.
+    std::unordered_map<TickerId, InstrumentId> reqIdToInstrumentId_;
+    ///< Maps IBKR request IDs to InstrumentId enum.
+    std::unordered_map<InstrumentId, QuoteSnapshot> quote_cache_;
+    ///< Local cache storing the latest L1 quotes per instrument.
+    rigtorp::SPSCQueue<TradeTick>     &tickBuffer_;
+    rigtorp::SPSCQueue<QuoteSnapshot> &quoteBuffer_;
+    STATE   state_;      ///< Current phase of the client's connection finite state machine.
+    OrderId orderId_;    ///< The next valid, sequential order ID tracked for execution.
+    bool    subscribed_; ///< Track if active market data subscriptions have been initialized.
 
     /* -------------------------------------------------------------------------- */
     /*                               Helper Functions                             */

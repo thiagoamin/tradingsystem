@@ -20,18 +20,24 @@
 		{
 			"label": "📈 Build: Dev",
 			"detail": "CMake build Project Orion",
-			"type": "cmake",
-			"command": "build",
-			"preset": "dev",
-			"group": "build"
+			"type": "shell",
+			"command": "time cmake --build --preset dev",
+			"group": "build",
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared"
+			}
 		},
 		{
 			"label": "🧪 Build: Test",
 			"detail": "CMake build test",
-			"type": "cmake",
-			"command": "build",
-			"preset": "test",
-			"group": "build"
+			"type": "shell",
+			"command": "time cmake --build --preset test",
+			"group": "build",
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared"
+			}
 		},
 		{
 			"label": "Format C++ CodeCode 🍭",
