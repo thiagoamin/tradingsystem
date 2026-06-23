@@ -50,10 +50,8 @@ enum STATE
 
 /**
  * @class IbkrClient
- * @brief Handles the connection, data subscription, and callbacks for the Interactive Brokers API.
- * This class inherits from DefaultEWrapper to intercept and process incoming messages,
- * market data ticks, and errors from TWS or IB Gateway. It passes parsed data into
- * the MarketDataEngine.
+ * @brief EWrapper implementation that ingests IBKR market data callbacks and pushes to SPSCQueues.
+ *
  */
 class IbkrClient : public DefaultEWrapper
 {
@@ -309,4 +307,14 @@ class IbkrClient : public DefaultEWrapper
         int                errorCode,
         const std::string &errorString,
         const std::string &advancedOrderRejectJson);
+
+   public:
+    /* -------------------------------------------------------------------------- */
+    /*                        Helper Functions for Testing                        */
+    /* -------------------------------------------------------------------------- */
+
+    void inline injectReqId(TickerId reqId, InstrumentId instrumentId)
+    {
+        reqIdToInstrumentId_[reqId] = instrumentId;
+    }
 };

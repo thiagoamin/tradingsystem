@@ -214,12 +214,12 @@ void IbkrClient::tickSize(TickerId tickerId, TickType field, Decimal size)
     if (field == BID_SIZE || field == DELAYED_BID_SIZE)
     {
         quote.bidSize_us   = newSize_us;
-        quote.timeStamp_ns = TimeUtils::steady_time_ns();
+        quote.timeStamp_ns = TimeUtils::steadyTime_ns();
     }
     else if (field == ASK_SIZE || field == DELAYED_ASK_SIZE)
     {
         quote.askSize_us   = newSize_us;
-        quote.timeStamp_ns = TimeUtils::steady_time_ns();
+        quote.timeStamp_ns = TimeUtils::steadyTime_ns();
     }
 
     // 3. Send quote to market data engine
@@ -250,8 +250,8 @@ void IbkrClient::tickByTickAllLast(
 
     event.instrumentId           = it->second;
     event.exchangeTimestamp_ns   = static_cast<int64_t>(time) * TimeUtils::kNanosecondsPerSecond;
-    event.recvSteadyTimestamp_ns = TimeUtils::steady_time_ns();
-    event.recvWallTimestamp_ns   = TimeUtils::wall_time_ns();
+    event.recvSteadyTimestamp_ns = TimeUtils::steadyTime_ns();
+    event.recvWallTimestamp_ns   = TimeUtils::wallTime_ns();
     event.price                  = price;
     event.size_us                = convertDecimalToMicroShares(size);
 

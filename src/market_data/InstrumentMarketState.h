@@ -72,7 +72,10 @@ class InstrumentMarketState
                                        ///< intervals used for Strategy.
 
    public:
-    // getters for testing
+    /* -------------------------------------------------------------------------- */
+    /*                        Helper Functions for Testing                        */
+    /* -------------------------------------------------------------------------- */
+
     const std::vector<FeatureBar> &getBars() const { return bars_15s_; }
 
     size_t barCount() const { return bars_15s_.size(); }

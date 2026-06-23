@@ -35,7 +35,7 @@ inline void init()
  * @note Guarantees strict linearity. Ideal for internal system profiling and delta latency
  * measurements.
  */
-inline int64_t steady_time_ns()
+inline int64_t steadyTime_ns()
 {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(
                std::chrono::steady_clock::now().time_since_epoch())
@@ -48,7 +48,7 @@ inline int64_t steady_time_ns()
  * @note Represents Unix Epoch time. Ideal for measuring external network flight delays against
  * exchange prints, but can jump if OS time adjusts.
  */
-inline int64_t wall_time_ns()
+inline int64_t wallTime_ns()
 {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(
                std::chrono::system_clock::now().time_since_epoch())
