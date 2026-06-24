@@ -17,10 +17,14 @@
  *
  */
 
+#include <thread>
+#include <atomic>
+
+#include "utils/TimeUtils.h"
 #include "rigtorp/SPSCQueue.h"
 
-#include "events/QuoteSnapshot.h"
 #include "events/TradeTick.h"
+#include "events/QuoteSnapshot.h"
 #include "market_data/MarketDataEngine.h"
 
 /**
@@ -65,7 +69,7 @@ class Tasks
      * @brief Fires flush signal on 15s bar boundaries
      *
      */
-    void timerTask();
+    void timerTask(int64_t interval = TimeUtils::kFifteenSec_ns);
 
     /**
      * @brief Drains tick and quote buffers into MarketDataEngine, acts as transport layer taking

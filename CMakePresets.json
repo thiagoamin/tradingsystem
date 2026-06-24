@@ -24,6 +24,16 @@
                 "TARGET": "test",
                 "CMAKE_BUILD_TYPE": "Debug"
             }
+        },
+        {
+            "name": "system_bench",
+            "displayName": "System Bench Build",
+            "description": "Release build for full system validation, pipeline benchmarking, and latency testing",
+            "binaryDir": "build_sys_bench",
+            "cacheVariables": {
+                "TARGET": "bench",
+                "CMAKE_BUILD_TYPE": "Release"
+            }
         }
     ],
     "buildPresets": [
@@ -34,6 +44,10 @@
         {
             "name": "test",
             "configurePreset": "test"
+        },
+        {
+            "name": "bench",
+            "configurePreset": "system_bench"
         }
     ]
 }

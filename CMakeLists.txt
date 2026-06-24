@@ -64,7 +64,7 @@ file(GLOB_RECURSE PROJECT_SOURCES
 )
 
 list(FILTER PROJECT_SOURCES EXCLUDE REGEX ".*main\\.cpp$")
-list(FILTER PROJECT_SOURCES EXCLUDE REGEX ".*ibkr_connect_test\\.cpp$")
+list(FILTER PROJECT_SOURCES EXCLUDE REGEX ".*/bench/.*\\.cpp$")
 
 add_library(trading_lib STATIC ${PROJECT_SOURCES})
 
@@ -86,11 +86,18 @@ if ("${TARGET}" STREQUAL "binary")
 
     target_link_libraries(projectorion PRIVATE trading_lib)
 
-    add_executable(ibkr_connect_test
-        "${CMAKE_SOURCE_DIR}/src/ibkr_connect_test.cpp"
+    
+elseif ("${TARGET}" STREQUAL "bench")
+    add_executable(ibkrConnectTest
+        "${CMAKE_SOURCE_DIR}/bench/ibkrConnectTest.cpp"
     )
 
-    target_link_libraries(ibkr_connect_test PRIVATE trading_lib)
+    add_executable(marketBench
+        "${CMAKE_SOURCE_DIR}/bench/marketBench.cpp"
+    )
+
+    target_link_libraries(ibkrConnectTest PRIVATE trading_lib)
+    target_link_libraries(marketBench PRIVATE trading_lib)
 
 elseif ("${TARGET}" STREQUAL "test")
     enable_testing()

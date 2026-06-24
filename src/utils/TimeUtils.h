@@ -16,8 +16,10 @@
 
 namespace TimeUtils
 {
-constexpr int64_t kNanosecondsPerSecond = 1'000'000'000LL; // k = constants
-constexpr int64_t kFifteenSec_ns        = 15'000'000'000LL;
+
+constexpr int64_t kNanosecondsPerSecond      = 1'000'000'000LL; // k = constants
+constexpr int64_t kFifteenSec_ns             = 15'000'000'000LL;
+constexpr int64_t kTwoHundredFiftyMiliSec_ns = 250'000'000LL;
 
 /**
  * @brief Initialize timezone to Eastern Time

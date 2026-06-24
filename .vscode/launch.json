@@ -15,7 +15,7 @@
         {
             "name": "Run Connection Test",
             "cwd": "${workspaceFolder}",
-            "program": "build_dev/ibkr_connect_test",
+            "program": "build_dev/ibkrConnectTest",
             "type": "lldb",
             "request": "launch",
             "args": [],

@@ -1,8 +1,5 @@
-#include <thread>
-#include <atomic>
-
 #include "Tasks.h"
-#include "utils/TimeUtils.h"
+#include "TaskUtils.h"
 
 Tasks::Tasks(
     MarketDataEngine                  &engine,
@@ -32,7 +29,7 @@ void Tasks::start()
     engineThread_ = std::thread(&Tasks::engineTask, this);
 
     // Timer thread (#2)
-    timerThread_ = std::thread(&Tasks::timerTask, this);
+    timerThread_ = std::thread(&Tasks::timerTask, this, TimeUtils::kFifteenSec_ns);
 }
 
 void Tasks::stop()
@@ -45,43 +42,10 @@ void Tasks::stop()
 
 void Tasks::engineTask()
 {
-    while (running_.load(std::memory_order_relaxed))
-    {
-        if (flushSignal_.load(std::memory_order_acquire))
-        {
-            int64_t boundaryId = TimeUtils::wallTime_ns() / TimeUtils::kFifteenSec_ns - 1;
-            engine_.flush(boundaryId);
-            flushSignal_.store(false, std::memory_order_release);
-        }
-
-        TradeTick *tick = tickBuffer_.front();
-        if (tick)
-        {
-            engine_.onTradeTick(*tick);
-            tickBuffer_.pop();
-        }
-
-        QuoteSnapshot *quote = quoteBuffer_.front();
-        if (quote)
-        {
-            engine_.onQuoteSample(*quote);
-            quoteBuffer_.pop();
-        }
-    }
+    runEngineLoop(running_, flushSignal_, tickBuffer_, quoteBuffer_, engine_);
 }
 
-void Tasks::timerTask()
+void Tasks::timerTask(int64_t interval)
 {
-    while (running_.load(std::memory_order_relaxed))
-    {
-        // calculate next 15s boundary
-        auto now_ns = TimeUtils::wallTime_ns();
-
-        int64_t next_boundary = (now_ns / TimeUtils::kFifteenSec_ns + 1) *
-                                TimeUtils::kFifteenSec_ns; // start at boundary 15s instead of 0
-        int64_t sleep_ns      = next_boundary - now_ns;
-
-        std::this_thread::sleep_for(std::chrono::nanoseconds(sleep_ns));
-        flushSignal_.store(true, std::memory_order_release);
-    }
+    runTimerLoop(running_, flushSignal_, interval);
 }

@@ -39,6 +39,7 @@ int main()
     unsigned attempt = 0;
 
     // TODO: handle thread, ibkr, etc if exception thrown
+    // TOOD: add manual shutdown
     for (;;)
     {
         ++attempt;
