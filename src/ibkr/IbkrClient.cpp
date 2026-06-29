@@ -225,7 +225,15 @@ void IbkrClient::tickSize(TickerId tickerId, TickType field, Decimal size)
     // 3. Send quote to market data engine
     if (quote.bid > 0 && quote.ask > 0 && quote.bidSize_us > 0 && quote.askSize_us > 0)
     {
+#ifdef BENCH
+        if (!quoteBuffer_.try_push(quote))
+        {
+            ++droppedQuotes;
+            printf("DROP! droppedQuotes=%d\n", droppedQuotes.load());
+        }
+#else
         quoteBuffer_.push(quote);
+#endif
     }
 }
 
@@ -263,7 +271,14 @@ void IbkrClient::tickByTickAllLast(
         return;
     }
 
+#ifdef BENCH
+    if (!tickBuffer_.try_push(event))
+    {
+        ++droppedTicks;
+    }
+#else
     tickBuffer_.push(event);
+#endif
 }
 
 void IbkrClient::connectionClosed()

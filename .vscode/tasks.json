@@ -1,9 +1,9 @@
 {
 	"version": "2.0.0",
 	"tasks": [
+		/* -------------------------------- Configure ------------------------------- */
 		{
 			"label": "📈 CMake: Configure Dev",
-			"detail": "Configure CMake for Project Orion",
 			"type": "cmake",
 			"command": "configure",
 			"preset": "dev",
@@ -11,23 +11,35 @@
 		},
 		{
 			"label": "🧪 CMake: Configure Test",
-			"detail": "Configure CMake for testing",
 			"type": "cmake",
 			"command": "configure",
 			"preset": "test",
 			"group": "build"
 		},
 		{
-			"label": "🔬 CMake: Configure Bench",
-			"detail": "Configure CMake for benchmarking",
+			"label": "🔬 CMake: Configure Bench Debug",
+			"type": "cmake",
+			"command": "configure",
+			"preset": "bench-debug",
+			"group": "build"
+		},
+		{
+			"label": "🔬🚀 CMake: Configure Bench Release",
 			"type": "cmake",
 			"command": "configure",
 			"preset": "bench",
 			"group": "build"
 		},
 		{
+			"label": "🚀 CMake: Configure Prod",
+			"type": "cmake",
+			"command": "configure",
+			"preset": "prod",
+			"group": "build"
+		},
+		/* ---------------------------------- Build --------------------------------- */
+		{
 			"label": "📈 Build: Dev",
-			"detail": "CMake build Project Orion",
 			"type": "shell",
 			"command": "time cmake --build --preset dev",
 			"group": "build",
@@ -38,7 +50,6 @@
 		},
 		{
 			"label": "🧪 Build: Test",
-			"detail": "CMake build test",
 			"type": "shell",
 			"command": "time cmake --build --preset test",
 			"group": "build",
@@ -48,8 +59,17 @@
 			}
 		},
 		{
-			"label": "🔬 Build: Bench",
-			"detail": "CMake build bench",
+			"label": "🔬 Build: Bench Debug",
+			"type": "shell",
+			"command": "time cmake --build --preset bench-debug",
+			"group": "build",
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared"
+			}
+		},
+		{
+			"label": "🔬🚀 Build: Bench Release",
 			"type": "shell",
 			"command": "time cmake --build --preset bench",
 			"group": "build",
@@ -59,8 +79,18 @@
 			}
 		},
 		{
+			"label": "🚀 Build: Prod",
+			"type": "shell",
+			"command": "time cmake --build --preset prod",
+			"group": "build",
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared"
+			}
+		},
+		/* ------------------------------- Clean Build ------------------------------ */
+		{
 			"label": "📈 Clean Build: Dev",
-			"detail": "Configure and force full rebuild for Project Orion",
 			"type": "shell",
 			"command": "cmake --preset dev && time cmake --build --preset dev --clean-first",
 			"group": "build",
@@ -71,7 +101,6 @@
 		},
 		{
 			"label": "🧪 Clean Build: Test",
-			"detail": "CMake force full rebuild for test",
 			"type": "shell",
 			"command": "cmake --preset test && time cmake --build --preset test --clean-first",
 			"group": "build",
@@ -81,8 +110,17 @@
 			}
 		},
 		{
-			"label": "📈 Clean Build: Bench",
-			"detail": "Configure and force full rebuild for bench",
+			"label": "🔬 Clean Build: Bench Debug",
+			"type": "shell",
+			"command": "cmake --preset bench-debug && time cmake --build --preset bench-debug --clean-first",
+			"group": "build",
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared"
+			}
+		},
+		{
+			"label": "🔬🚀 Clean Build: Bench Release",
 			"type": "shell",
 			"command": "cmake --preset bench && time cmake --build --preset bench --clean-first",
 			"group": "build",
@@ -92,7 +130,18 @@
 			}
 		},
 		{
-			"label": "Format C++ CodeCode 🍭",
+			"label": "🚀 Clean Build: Prod",
+			"type": "shell",
+			"command": "cmake --preset prod && time cmake --build --preset prod --clean-first",
+			"group": "build",
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared"
+			}
+		},
+		/* -------------------------------- Utilities ------------------------------- */
+		{
+			"label": "Format C++ Code 🍭",
 			"type": "shell",
 			"command": "python3 scripts/utilities/fix_formatting.py",
 			"group": "build",

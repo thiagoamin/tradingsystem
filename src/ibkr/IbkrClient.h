@@ -317,4 +317,9 @@ class IbkrClient : public DefaultEWrapper
     {
         reqIdToInstrumentId_[reqId] = instrumentId;
     }
+
+#ifdef BENCH
+    std::atomic<int> droppedTicks{ 0 };
+    std::atomic<int> droppedQuotes{ 0 };
+#endif
 };

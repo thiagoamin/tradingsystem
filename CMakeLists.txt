@@ -7,6 +7,12 @@ project(projectorion LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Debug)
+endif()
+
+message(STATUS "🔨 Build type: ${CMAKE_BUILD_TYPE}")
+
 # protobuf - find in system
 find_package(Protobuf REQUIRED)
 
@@ -95,6 +101,9 @@ elseif ("${TARGET}" STREQUAL "bench")
     add_executable(marketBench
         "${CMAKE_SOURCE_DIR}/bench/marketBench.cpp"
     )
+
+    target_compile_definitions(trading_lib PUBLIC BENCH)
+    target_compile_definitions(marketBench PRIVATE BENCH)
 
     target_link_libraries(ibkrConnectTest PRIVATE trading_lib)
     target_link_libraries(marketBench PRIVATE trading_lib)

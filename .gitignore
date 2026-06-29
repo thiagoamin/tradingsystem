@@ -11,9 +11,7 @@ __pycache__/
 venv/
 
 # Build
-/build_dev
-/build_test
-/build
+/build*/
 
 # OS
 .DS_Store
