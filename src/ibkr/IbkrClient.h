@@ -310,7 +310,7 @@ class IbkrClient : public DefaultEWrapper
 
    public:
     /* -------------------------------------------------------------------------- */
-    /*                        Helper Functions for Testing                        */
+    /*                             Helpers for Testing                            */
     /* -------------------------------------------------------------------------- */
 
     void inline injectReqId(TickerId reqId, InstrumentId instrumentId)

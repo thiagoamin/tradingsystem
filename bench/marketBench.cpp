@@ -10,27 +10,16 @@
 #include "events/TradeTick.h"
 #include "events/QuoteSnapshot.h"
 #include "ibkr/IbkrClient.h"
+#include "ibkr/OrionTradingContract.h"
 #include "utils/TimeUtils.h"
 #include "utils/LoggerInit.h"
 #include "threads/TaskUtils.h"
 #include "threads/Tasks.h"
 
-constexpr int NUM_TICKS = 100'000;
+constexpr int NUM_TICKS      = 1'000'000;
+constexpr int CONTRACTS_SIZE = 8;
 #define THROUGHPUT_ONLY 1
 std::atomic<int> quoteCount{ 0 };
-
-// all reqIds mapped to instruments
-const std::vector<std::pair<TickerId, InstrumentId>> kTradeReqIds = {
-    { 20001, InstrumentId::SPY },   { 20002, InstrumentId::QQQ },  { 20003, InstrumentId::TSLA },
-    { 20004, InstrumentId::AAPL },  { 20005, InstrumentId::MSFT }, { 20006, InstrumentId::NVDA },
-    { 20007, InstrumentId::GOOGL }, { 20008, InstrumentId::AMZN },
-};
-
-const std::vector<std::pair<TickerId, InstrumentId>> kQuoteReqIds = {
-    { 1001, InstrumentId::SPY },   { 1002, InstrumentId::QQQ },  { 1003, InstrumentId::TSLA },
-    { 1004, InstrumentId::AAPL },  { 1005, InstrumentId::MSFT }, { 1006, InstrumentId::NVDA },
-    { 1007, InstrumentId::GOOGL }, { 1008, InstrumentId::AMZN },
-};
 
 void timerThread(std::atomic<bool> &running, std::atomic<bool> &flushSignal, int64_t interval)
 {
@@ -46,20 +35,22 @@ void producerThread(IbkrClient &client, std::atomic<bool> &flushSignal)
     // push 100,000 * 8 = 800,00 ticks out
     for (int i = 0; i < NUM_TICKS; ++i)
     {
-        for (auto &[reqId, _] : kTradeReqIds)
+        for (const auto &config : OrionTradingContract::kInstruments)
         {
             // push trade tick
             client.tickByTickAllLast(
-                reqId, 1, 1700000000 + i,
+                config.tradeReqId, 1, 1700000000 + i,
                 523.50 + (i % 100) * 0.01, // vary price slightly
                 DecimalFunctions::doubleToDecimal(100.0), attrib, "NYSE", "");
 
             if (flushSignal.load(std::memory_order_acquire))
             {
-                client.tickPrice(reqId, BID, 523.10 + (i % 100) * 0.01, attribQuote);
-                client.tickPrice(reqId, ASK, 523.12 + (i % 100) * 0.01, attribQuote);
-                client.tickSize(reqId, BID_SIZE, DecimalFunctions::doubleToDecimal(100.0));
-                client.tickSize(reqId, ASK_SIZE, DecimalFunctions::doubleToDecimal(50.0));
+                client.tickPrice(config.quoteReqId, BID, 523.10 + (i % 100) * 0.01, attribQuote);
+                client.tickPrice(config.quoteReqId, ASK, 523.12 + (i % 100) * 0.01, attribQuote);
+                client.tickSize(
+                    config.quoteReqId, BID_SIZE, DecimalFunctions::doubleToDecimal(100.0));
+                client.tickSize(
+                    config.quoteReqId, ASK_SIZE, DecimalFunctions::doubleToDecimal(50.0));
                 quoteCount++;
             }
         }
@@ -77,7 +68,7 @@ void consumerThread(
 {
     int consumedTrades = 0;
     int consumedQuotes = 0;
-    while (consumedTrades < NUM_TICKS * kTradeReqIds.size() || consumedQuotes < quoteCount.load())
+    while (consumedTrades < NUM_TICKS * CONTRACTS_SIZE || consumedQuotes < quoteCount.load())
     {
         TradeTick *tick = tickBuffer.front();
         if (tick)
@@ -105,10 +96,11 @@ void consumerThread(
 
 void seedReqIds(IbkrClient &client)
 {
-    for (auto &[reqId, instrId] : kTradeReqIds)
-        client.injectReqId(reqId, instrId);
-    for (auto &[reqId, instrId] : kQuoteReqIds)
-        client.injectReqId(reqId, instrId);
+    for (auto &config : OrionTradingContract::kInstruments)
+    {
+        client.injectReqId(config.quoteReqId, config.instrumentId);
+        client.injectReqId(config.tradeReqId, config.instrumentId);
+    }
 }
 
 int main()
@@ -121,8 +113,6 @@ int main()
     std::atomic<bool> quoteSignal{ false };
 
     IbkrClient client(tradeBuffer, quoteBuffer);
-    printf("droppedQuotes initial: %d\n", client.droppedQuotes.load());
-    printf("droppedTicks initial: %d\n", client.droppedTicks.load());
 
     // start sdplog
     if (!initLogger())
@@ -135,7 +125,7 @@ int main()
 
     std::vector<int64_t> tickLatencies_ns;
     std::vector<int64_t> quoteLatencies_ns;
-    tickLatencies_ns.reserve(NUM_TICKS * kTradeReqIds.size());
+    tickLatencies_ns.reserve(NUM_TICKS * CONTRACTS_SIZE);
 
     // START
     auto startTime = TimeUtils::steadyTime_ns();
@@ -179,7 +169,7 @@ int main()
     /* --------------------------------- Results -------------------------------- */
 
     double totalMs         = (endTime - startTime) / 1e6;
-    double tickThroughput  = (NUM_TICKS * kTradeReqIds.size()) / (totalMs / 1000.0);
+    double tickThroughput  = (NUM_TICKS * CONTRACTS_SIZE) / (totalMs / 1000.0);
     double quoteThroughput = (quoteLatencies_ns.size()) / (totalMs / 1000.0);
 
     /* -------------------------------- Tick Data ------------------------------- */
@@ -207,6 +197,8 @@ int main()
     printf("Quotes pushed: %d\n", quoteCount.load());
     printf("Quotes consumed: %zu\n", quoteLatencies_ns.size());
     printf("Quote dropped packets: %d\n", client.droppedQuotes.load());
+
+    // TODO: clean up pring after upgrading to C++ 23
 
     return 0;
 }

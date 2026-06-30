@@ -299,6 +299,8 @@ void IbkrClient::processMessages()
         return;
     }
     pReader_->processMsgs();
+
+    // TODO Add timer to push quote
 }
 
 void IbkrClient::subscribe()
@@ -306,23 +308,11 @@ void IbkrClient::subscribe()
     spdlog::info("Setting market data type: 4 (delayed frozen)");
     pClientSocket_->reqMarketDataType(4);
 
-    reqQuoteData(1001, InstrumentId::SPY, OrionTradingContract::SPY());
-    reqQuoteData(1002, InstrumentId::QQQ, OrionTradingContract::QQQ());
-    reqQuoteData(1003, InstrumentId::TSLA, OrionTradingContract::TSLA());
-    reqQuoteData(1004, InstrumentId::AAPL, OrionTradingContract::AAPL());
-    reqQuoteData(1005, InstrumentId::MSFT, OrionTradingContract::MSFT());
-    reqQuoteData(1006, InstrumentId::NVDA, OrionTradingContract::NVDA());
-    reqQuoteData(1007, InstrumentId::GOOGL, OrionTradingContract::GOOGL());
-    reqQuoteData(1008, InstrumentId::AMZN, OrionTradingContract::AMZN());
-
-    reqTickByTickData(20001, InstrumentId::SPY, OrionTradingContract::SPY());
-    reqTickByTickData(20002, InstrumentId::QQQ, OrionTradingContract::QQQ());
-    reqTickByTickData(20003, InstrumentId::TSLA, OrionTradingContract::TSLA());
-    reqTickByTickData(20004, InstrumentId::AAPL, OrionTradingContract::AAPL());
-    reqTickByTickData(20005, InstrumentId::MSFT, OrionTradingContract::MSFT());
-    reqTickByTickData(20006, InstrumentId::NVDA, OrionTradingContract::NVDA());
-    reqTickByTickData(20007, InstrumentId::GOOGL, OrionTradingContract::GOOGL());
-    reqTickByTickData(20008, InstrumentId::AMZN, OrionTradingContract::AMZN());
+    for (auto &config : OrionTradingContract::kInstruments)
+    {
+        reqQuoteData(config.quoteReqId, config.instrumentId, config.contract);
+        reqTickByTickData(config.tradeReqId, config.instrumentId, config.contract);
+    }
 
     subscribed_ = true;
     spdlog::info("Subscribed to market data for Project Orion instruments");
