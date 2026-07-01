@@ -16,8 +16,8 @@ int main()
     // Initialize time ET
     TimeUtils::init();
 
-    rigtorp::SPSCQueue<TradeTick>     tickBuffer(4096);
-    rigtorp::SPSCQueue<QuoteSnapshot> quoteBuffer(64);
+    rigtorp::SPSCQueue<TradeTick>     tickBuffer(1 << 20);
+    rigtorp::SPSCQueue<QuoteSnapshot> quoteBuffer(32);
     MarketDataEngine                  engine;
 
     // Initialize logger

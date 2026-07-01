@@ -142,7 +142,7 @@ void seedReqIds(IbkrClient &client)
 int main()
 {
     // Used to figure out how big spscqueue should be
-    rigtorp::SPSCQueue<TradeTick>     tradeBuffer(1 << 15);
+    rigtorp::SPSCQueue<TradeTick>     tradeBuffer(1 << 20);
     rigtorp::SPSCQueue<QuoteSnapshot> quoteBuffer(4 * kNumInstruments);
 
     std::atomic<bool> running{ true };
