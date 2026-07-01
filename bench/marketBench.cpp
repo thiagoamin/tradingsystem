@@ -16,8 +16,7 @@
 #include "threads/TaskUtils.h"
 #include "threads/Tasks.h"
 
-constexpr int NUM_TICKS = 1'000'000;
-#define THROUGHPUT_ONLY 1
+constexpr int     NUM_TICKS = 1'000'000;
 std::atomic<int>  flushCount{ 0 };
 std::atomic<int>  barBuildCount{ 0 };
 std::atomic<bool> producerDone{ false };
@@ -42,7 +41,7 @@ void producerThread(IbkrClient &client, std::atomic<bool> &flushSignal)
         for (const auto &config : OrionTradingContract::kInstruments)
         {
             auto wakeAt =
-                TimeUtils::steadyTime_ns() + 1000LL; // rate limit producer thread to 1M ticks/s
+                TimeUtils::steadyTime_ns() + 10000LL; // rate limit producer thread to 100K ticks/s
             // push trade tick
             client.tickByTickAllLast(
                 config.tradeReqId, 1, 1700000000 + i,
@@ -71,7 +70,7 @@ void producerThread(IbkrClient &client, std::atomic<bool> &flushSignal)
     }
     producerDone.store(true, std::memory_order_release);
 }
-#if THROUGHPUT_ONLY
+
 // Consumer thread: drain the queue, record latency
 void consumerThread(
     rigtorp::SPSCQueue<TradeTick>     &tickBuffer,
@@ -81,29 +80,13 @@ void consumerThread(
     std::atomic<int>                  &ticksPushed,
     std::vector<int64_t>              &tickLatencies_ns,
     std::vector<int64_t>              &quoteLatencies_ns,
-    MarketDataEngine                  &engine,
-    std::atomic<bool>                 &flushSignal
-
-)
+    MarketDataEngine                  &engine)
 {
     int consumedTrades = 0;
     int consumedQuotes = 0;
     while (!producerDone.load(std::memory_order_acquire) || consumedTrades < ticksPushed.load() ||
            consumedQuotes < quotesPushed.load())
     {
-        if (flushSignal.load(std::memory_order_acquire))
-        {
-            int64_t boundaryId = TimeUtils::wallTime_ns() / TimeUtils::kFifteenSec_ns - 1;
-
-            auto flushStart = TimeUtils::steadyTime_ns();
-            engine.flush(boundaryId);
-            auto flushTime = TimeUtils::steadyTime_ns() - flushStart;
-            printf("Flush took: %ld ns\n", static_cast<long>(flushTime));
-
-            flushSignal.store(false, std::memory_order_release);
-            barBuildCount++;
-        }
-
         TradeTick *tick = tickBuffer.front();
         if (tick)
         {
@@ -128,7 +111,36 @@ void consumerThread(
 
     running.store(false);
 }
-#endif
+
+void flushThread(
+    std::atomic<bool> &flushSignal,
+    MarketDataEngine  &engine,
+    std::atomic<bool> &running)
+{
+    while (running.load(std::memory_order_relaxed))
+    {
+        if (flushSignal.load(std::memory_order_acquire))
+        {
+            int64_t boundaryId = TimeUtils::wallTime_ns() / TimeUtils::kFifteenSec_ns - 1;
+
+            auto flushStart = TimeUtils::steadyTime_ns();
+            engine.flush(boundaryId);
+            auto flushTime = TimeUtils::steadyTime_ns() - flushStart;
+            printf("Flush took: %ld ns\n", static_cast<long>(flushTime));
+
+            flushSignal.store(false, std::memory_order_release);
+            barBuildCount++;
+        }
+    }
+
+    // drain any final pending flush
+    if (flushSignal.load(std::memory_order_acquire))
+    {
+        int64_t boundaryId = TimeUtils::wallTime_ns() / TimeUtils::kFifteenSec_ns - 1;
+        engine.flush(boundaryId);
+        barBuildCount++;
+    }
+}
 
 void seedReqIds(IbkrClient &client)
 {
@@ -142,7 +154,7 @@ void seedReqIds(IbkrClient &client)
 int main()
 {
     // Used to figure out how big spscqueue should be
-    rigtorp::SPSCQueue<TradeTick>     tradeBuffer(1 << 20);
+    rigtorp::SPSCQueue<TradeTick>     tradeBuffer(5000);
     rigtorp::SPSCQueue<QuoteSnapshot> quoteBuffer(4 * kNumInstruments);
 
     std::atomic<bool> running{ true };
@@ -175,18 +187,12 @@ int main()
         TimeUtils::kTwoHundredFiftyMiliSec_ns);
     std::thread timer15sThread(
         timerThread, std::ref(running), std::ref(barSignal), TimeUtils::kFifteenSec_ns);
-    std::thread engineThread;
-
-#if THROUGHPUT_ONLY
-
-    engineThread = std::thread(
+    std::thread engineThread = std::thread(
         consumerThread, std::ref(tradeBuffer), std::ref(quoteBuffer), std::ref(running),
         std::ref(client.quotesPushed), std::ref(client.ticksPushed), std::ref(tickLatencies_ns),
-        std::ref(quoteLatencies_ns), std::ref(engine), std::ref(barSignal));
-#else
-    Tasks tasks(engine, tradeBuffer, quoteBuffer);
-    tasks.start();
-#endif
+        std::ref(quoteLatencies_ns), std::ref(engine));
+    std::thread barBuildThread =
+        std::thread(flushThread, std::ref(barSignal), std::ref(engine), std::ref(running));
 
     // Producer
     std::thread mockDataThread(producerThread, std::ref(client), std::ref(quoteSignal));
@@ -198,13 +204,10 @@ int main()
     // END
     auto endTime = TimeUtils::steadyTime_ns();
 
-#if THROUGHPUT_ONLY
     engineThread.join();
-#else
-    tasks.stop();
-#endif
     timer250msThread.join();
     timer15sThread.join();
+    barBuildThread.join();
     mockDataThread.join();
 
     /* --------------------------------- Results -------------------------------- */
