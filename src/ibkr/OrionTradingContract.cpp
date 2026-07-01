@@ -49,3 +49,14 @@ Contract OrionTradingContract::AMZN()
 {
     return makeUsEquity("AMZN");
 }
+
+const std::vector<InstrumentConfig> OrionTradingContract::kInstruments = {
+    { 1001, 20001, OrionTradingContract::SPY(), InstrumentId::SPY },
+    { 1002, 20002, OrionTradingContract::QQQ(), InstrumentId::QQQ },
+    { 1003, 20003, OrionTradingContract::TSLA(), InstrumentId::TSLA },
+    { 1004, 20004, OrionTradingContract::AAPL(), InstrumentId::AAPL },
+    { 1005, 20005, OrionTradingContract::MSFT(), InstrumentId::MSFT },
+    { 1006, 20006, OrionTradingContract::NVDA(), InstrumentId::NVDA },
+    { 1007, 20007, OrionTradingContract::GOOGL(), InstrumentId::GOOGL },
+    { 1008, 20008, OrionTradingContract::AMZN(), InstrumentId::AMZN },
+};

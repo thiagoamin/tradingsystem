@@ -180,7 +180,7 @@ void IbkrClient::tickPrice(
         return;
     }
 
-    auto &quote        = quote_cache_[it->second];
+    auto &quote        = quote_cache_[static_cast<size_t>(it->second)];
     quote.instrumentId = it->second;
 
     // 2. Check if bid or ask
@@ -207,25 +207,25 @@ void IbkrClient::tickSize(TickerId tickerId, TickType field, Decimal size)
 
     int64_t newSize_us = convertDecimalToMicroShares(size);
 
-    auto &quote        = quote_cache_[it->second];
+    auto &quote        = quote_cache_[static_cast<size_t>(it->second)];
     quote.instrumentId = it->second;
 
     // 2. Check if bid or ask
     if (field == BID_SIZE || field == DELAYED_BID_SIZE)
     {
         quote.bidSize_us   = newSize_us;
-        quote.timeStamp_ns = TimeUtils::steady_time_ns();
+        quote.timeStamp_ns = TimeUtils::steadyTime_ns();
     }
     else if (field == ASK_SIZE || field == DELAYED_ASK_SIZE)
     {
         quote.askSize_us   = newSize_us;
-        quote.timeStamp_ns = TimeUtils::steady_time_ns();
+        quote.timeStamp_ns = TimeUtils::steadyTime_ns();
     }
 
-    // 3. Send quote to market data engine
-    if (quote.bid > 0 && quote.ask > 0 && quote.bidSize_us > 0 && quote.askSize_us > 0)
+    if (!quote.dirty)
     {
-        quoteBuffer_.push(quote);
+        quote.dirty = true;
+        dirtyQuoteInstruments_.push_back(it->second);
     }
 }
 
@@ -250,8 +250,8 @@ void IbkrClient::tickByTickAllLast(
 
     event.instrumentId           = it->second;
     event.exchangeTimestamp_ns   = static_cast<int64_t>(time) * TimeUtils::kNanosecondsPerSecond;
-    event.recvSteadyTimestamp_ns = TimeUtils::steady_time_ns();
-    event.recvWallTimestamp_ns   = TimeUtils::wall_time_ns();
+    event.recvSteadyTimestamp_ns = TimeUtils::steadyTime_ns();
+    event.recvWallTimestamp_ns   = TimeUtils::wallTime_ns();
     event.price                  = price;
     event.size_us                = convertDecimalToMicroShares(size);
 
@@ -263,7 +263,18 @@ void IbkrClient::tickByTickAllLast(
         return;
     }
 
+#ifdef BENCH
+    if (!tickBuffer_.try_push(event))
+    {
+        ++droppedTicks;
+    }
+    else
+    {
+        ++ticksPushed;
+    }
+#else
     tickBuffer_.push(event);
+#endif
 }
 
 void IbkrClient::connectionClosed()
@@ -271,6 +282,35 @@ void IbkrClient::connectionClosed()
     // TODO: Do more here
     spdlog::warn("Connection closed");
     subscribed_ = false;
+}
+
+void IbkrClient::flushDirtyQuotes()
+{
+    // 3. Send quote to market data engine
+    for (auto id : dirtyQuoteInstruments_)
+    {
+        auto &quote = quote_cache_[static_cast<size_t>(id)];
+
+        if (quote.bid > 0 && quote.ask > 0 && quote.bidSize_us > 0 && quote.askSize_us > 0)
+        {
+#ifdef BENCH
+            if (!quoteBuffer_.try_push(quote))
+            {
+                ++droppedQuotes;
+                printf("DROP! droppedQuotes=%d\n", droppedQuotes.load());
+            }
+            else
+            {
+                ++quotesPushed;
+            } // NEW
+#else
+            quoteBuffer_.push(quote);
+#endif
+            quote.updateSeq += 1;
+        }
+        quote.dirty = false;
+    }
+    dirtyQuoteInstruments_.clear();
 }
 
 // Core event loop
@@ -284,6 +324,10 @@ void IbkrClient::processMessages()
         return;
     }
     pReader_->processMsgs();
+
+    // TODO Add timer to push quote
+    // Ibkr processMessages should pair both bid and ask, price and size all in one message
+    flushDirtyQuotes();
 }
 
 void IbkrClient::subscribe()
@@ -291,23 +335,11 @@ void IbkrClient::subscribe()
     spdlog::info("Setting market data type: 4 (delayed frozen)");
     pClientSocket_->reqMarketDataType(4);
 
-    reqQuoteData(1001, InstrumentId::SPY, OrionTradingContract::SPY());
-    reqQuoteData(1002, InstrumentId::QQQ, OrionTradingContract::QQQ());
-    reqQuoteData(1003, InstrumentId::TSLA, OrionTradingContract::TSLA());
-    reqQuoteData(1004, InstrumentId::AAPL, OrionTradingContract::AAPL());
-    reqQuoteData(1005, InstrumentId::MSFT, OrionTradingContract::MSFT());
-    reqQuoteData(1006, InstrumentId::NVDA, OrionTradingContract::NVDA());
-    reqQuoteData(1007, InstrumentId::GOOGL, OrionTradingContract::GOOGL());
-    reqQuoteData(1008, InstrumentId::AMZN, OrionTradingContract::AMZN());
-
-    reqTickByTickData(20001, InstrumentId::SPY, OrionTradingContract::SPY());
-    reqTickByTickData(20002, InstrumentId::QQQ, OrionTradingContract::QQQ());
-    reqTickByTickData(20003, InstrumentId::TSLA, OrionTradingContract::TSLA());
-    reqTickByTickData(20004, InstrumentId::AAPL, OrionTradingContract::AAPL());
-    reqTickByTickData(20005, InstrumentId::MSFT, OrionTradingContract::MSFT());
-    reqTickByTickData(20006, InstrumentId::NVDA, OrionTradingContract::NVDA());
-    reqTickByTickData(20007, InstrumentId::GOOGL, OrionTradingContract::GOOGL());
-    reqTickByTickData(20008, InstrumentId::AMZN, OrionTradingContract::AMZN());
+    for (auto &config : OrionTradingContract::kInstruments)
+    {
+        reqQuoteData(config.quoteReqId, config.instrumentId, config.contract);
+        reqTickByTickData(config.tradeReqId, config.instrumentId, config.contract);
+    }
 
     subscribed_ = true;
     spdlog::info("Subscribed to market data for Project Orion instruments");

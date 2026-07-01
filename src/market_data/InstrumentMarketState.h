@@ -63,8 +63,8 @@ class InstrumentMarketState
 
    private:
     InstrumentId  instrumentId_;
+    uint32_t      lastSeenSeq_;
     QuoteSnapshot latestQuote_; ///< Cached recent quote snapshot.
-    bool          hasNewQuote_;
     MarketBucket  activeBucket_;
     ///< Current raw sub-window accumulation container for data filtering.
 
@@ -72,7 +72,10 @@ class InstrumentMarketState
                                        ///< intervals used for Strategy.
 
    public:
-    // getters for testing
+    /* -------------------------------------------------------------------------- */
+    /*                        Helper Functions for Testing                        */
+    /* -------------------------------------------------------------------------- */
+
     const std::vector<FeatureBar> &getBars() const { return bars_15s_; }
 
     size_t barCount() const { return bars_15s_.size(); }

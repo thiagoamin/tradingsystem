@@ -16,8 +16,7 @@ using TickerId = long;
 struct TradeTick
 {
     /* -------------------------------- Metadata -------------------------------- */
-    InstrumentId instrumentId;
-    int64_t      exchangeTimestamp_ns; ///< IBKR time_t * 1e9, coarse
+    int64_t exchangeTimestamp_ns; ///< IBKR time_t * 1e9, coarse
 
     ///< Latency profiling timstamps
     int64_t recvSteadyTimestamp_ns; ///< High-resolution local monotonic CPU clock tick upon socket
@@ -27,6 +26,8 @@ struct TradeTick
     /* ----------------------------- Transaction State --------------------------- */
     double  price;
     int64_t size_us;
+
+    InstrumentId instrumentId;
 
     // TODO: do I need other features
 };

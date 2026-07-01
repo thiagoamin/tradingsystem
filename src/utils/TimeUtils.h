@@ -16,8 +16,10 @@
 
 namespace TimeUtils
 {
-constexpr int64_t kNanosecondsPerSecond = 1'000'000'000LL; // k = constants
-constexpr int64_t kFifteenSec_ns        = 15'000'000'000LL;
+
+constexpr int64_t kNanosecondsPerSecond      = 1'000'000'000LL; // k = constants
+constexpr int64_t kFifteenSec_ns             = 15'000'000'000LL;
+constexpr int64_t kTwoHundredFiftyMiliSec_ns = 250'000'000LL;
 
 /**
  * @brief Initialize timezone to Eastern Time
@@ -35,7 +37,7 @@ inline void init()
  * @note Guarantees strict linearity. Ideal for internal system profiling and delta latency
  * measurements.
  */
-inline int64_t steady_time_ns()
+inline int64_t steadyTime_ns()
 {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(
                std::chrono::steady_clock::now().time_since_epoch())
@@ -48,7 +50,7 @@ inline int64_t steady_time_ns()
  * @note Represents Unix Epoch time. Ideal for measuring external network flight delays against
  * exchange prints, but can jump if OS time adjusts.
  */
-inline int64_t wall_time_ns()
+inline int64_t wallTime_ns()
 {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(
                std::chrono::system_clock::now().time_since_epoch())

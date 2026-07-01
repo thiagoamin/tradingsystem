@@ -1,8 +1,18 @@
 #pragma once
 
 #include <string>
-
+#include <vector>
 #include "Contract.h"
+
+#include "core/InstrumentId.h"
+
+struct InstrumentConfig
+{
+    TickerId     quoteReqId;
+    TickerId     tradeReqId;
+    Contract     contract;
+    InstrumentId instrumentId;
+};
 
 class OrionTradingContract
 {
@@ -54,6 +64,12 @@ class OrionTradingContract
      * @brief Generates an IBKR Contract for Amazon.com, Inc. (AMZN).
      */
     static Contract AMZN();
+
+    /**
+     * @brief Encapsulate reqIds for quote and trade ticks with Contract
+     *
+     */
+    static const std::vector<InstrumentConfig> kInstruments;
 
    private:
     /**

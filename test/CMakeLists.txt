@@ -22,14 +22,14 @@ add_library(test_lib STATIC ${TESTABLE_SOURCES})
 target_include_directories(test_lib PUBLIC ${CMAKE_SOURCE_DIR}/src)
 
 add_executable(unit_tests
-    unit/test_market_bucket.cpp
-    unit/test_instrument_market_state.cpp
+    unit/test_marketBucket.cpp
+    unit/test_instrumentMarketState.cpp
 )
 
 target_link_libraries(unit_tests PRIVATE test_lib GTest::gtest_main)
 
 add_executable(integration_tests
-    integration/test_market_data_engine.cpp
+    integration/test_marketDataEngine.cpp
 )
 
 target_link_libraries(integration_tests PRIVATE test_lib GTest::gtest_main)

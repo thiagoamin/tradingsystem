@@ -6,9 +6,18 @@
             "hidden": true
         },
         {
+            "name": "prod",
+            "displayName": "Production Build",
+            "binaryDir": "build_prod",
+            "cacheVariables": {
+                "TARGET": "binary",
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
             "name": "dev",
             "displayName": "Dev Build",
-            "description": "Development build for trading system in C++",
+            "description": "Debug development build for trading system in C++",
             "binaryDir": "build_dev",
             "cacheVariables": {
                 "TARGET": "binary",
@@ -24,6 +33,26 @@
                 "TARGET": "test",
                 "CMAKE_BUILD_TYPE": "Debug"
             }
+        },
+        {
+            "name": "bench-debug",
+            "displayName": "Bench Debug",
+            "description": "Debug build for full system validation, pipeline benchmarking, and latency testing",
+            "binaryDir": "build_bench_debug",
+            "cacheVariables": {
+                "TARGET": "bench",
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "bench",
+            "displayName": "Bench Release",
+            "description": "Release build for full system validation, pipeline benchmarking, and latency testing",
+            "binaryDir": "build_bench_release",
+            "cacheVariables": {
+                "TARGET": "bench",
+                "CMAKE_BUILD_TYPE": "Release"
+            }
         }
     ],
     "buildPresets": [
@@ -34,6 +63,18 @@
         {
             "name": "test",
             "configurePreset": "test"
+        },
+        {
+            "name": "bench-debug",
+            "configurePreset": "bench-debug"
+        },
+        {
+            "name": "bench",
+            "configurePreset": "bench"
+        },
+        {
+            "name": "prod",
+            "configurePreset": "prod"
         }
     ]
 }
