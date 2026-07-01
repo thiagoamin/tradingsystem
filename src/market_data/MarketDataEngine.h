@@ -22,7 +22,6 @@
 #include "core/InstrumentId.h"
 #include "events/QuoteSnapshot.h"
 #include "events/TradeTick.h"
-#include "market_data/BarBuilder.h"
 
 /**
  * @brief Central pipeline engine processing inbound streaming market data feeds.

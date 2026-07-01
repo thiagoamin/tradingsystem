@@ -180,7 +180,7 @@ void IbkrClient::tickPrice(
         return;
     }
 
-    auto &quote        = quote_cache_[it->second];
+    auto &quote        = quote_cache_[static_cast<size_t>(it->second)];
     quote.instrumentId = it->second;
 
     // 2. Check if bid or ask
@@ -207,7 +207,7 @@ void IbkrClient::tickSize(TickerId tickerId, TickType field, Decimal size)
 
     int64_t newSize_us = convertDecimalToMicroShares(size);
 
-    auto &quote        = quote_cache_[it->second];
+    auto &quote        = quote_cache_[static_cast<size_t>(it->second)];
     quote.instrumentId = it->second;
 
     // 2. Check if bid or ask
@@ -222,18 +222,10 @@ void IbkrClient::tickSize(TickerId tickerId, TickType field, Decimal size)
         quote.timeStamp_ns = TimeUtils::steadyTime_ns();
     }
 
-    // 3. Send quote to market data engine
-    if (quote.bid > 0 && quote.ask > 0 && quote.bidSize_us > 0 && quote.askSize_us > 0)
+    if (!quote.dirty)
     {
-#ifdef BENCH
-        if (!quoteBuffer_.try_push(quote))
-        {
-            ++droppedQuotes;
-            printf("DROP! droppedQuotes=%d\n", droppedQuotes.load());
-        }
-#else
-        quoteBuffer_.push(quote);
-#endif
+        quote.dirty = true;
+        dirtyQuoteInstruments_.push_back(it->second);
     }
 }
 
@@ -276,6 +268,10 @@ void IbkrClient::tickByTickAllLast(
     {
         ++droppedTicks;
     }
+    else
+    {
+        ++ticksPushed;
+    }
 #else
     tickBuffer_.push(event);
 #endif
@@ -286,6 +282,35 @@ void IbkrClient::connectionClosed()
     // TODO: Do more here
     spdlog::warn("Connection closed");
     subscribed_ = false;
+}
+
+void IbkrClient::flushDirtyQuotes()
+{
+    // 3. Send quote to market data engine
+    for (auto id : dirtyQuoteInstruments_)
+    {
+        auto &quote = quote_cache_[static_cast<size_t>(id)];
+
+        if (quote.bid > 0 && quote.ask > 0 && quote.bidSize_us > 0 && quote.askSize_us > 0)
+        {
+#ifdef BENCH
+            if (!quoteBuffer_.try_push(quote))
+            {
+                ++droppedQuotes;
+                printf("DROP! droppedQuotes=%d\n", droppedQuotes.load());
+            }
+            else
+            {
+                ++quotesPushed;
+            } // NEW
+#else
+            quoteBuffer_.push(quote);
+#endif
+            quote.updateSeq += 1;
+        }
+        quote.dirty = false;
+    }
+    dirtyQuoteInstruments_.clear();
 }
 
 // Core event loop
@@ -301,6 +326,8 @@ void IbkrClient::processMessages()
     pReader_->processMsgs();
 
     // TODO Add timer to push quote
+    // Ibkr processMessages should pair both bid and ask, price and size all in one message
+    flushDirtyQuotes();
 }
 
 void IbkrClient::subscribe()

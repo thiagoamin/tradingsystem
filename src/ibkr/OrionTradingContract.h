@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include "Contract.h"
 
 #include "core/InstrumentId.h"
@@ -9,8 +10,8 @@ struct InstrumentConfig
 {
     TickerId     quoteReqId;
     TickerId     tradeReqId;
-    InstrumentId instrumentId;
     Contract     contract;
+    InstrumentId instrumentId;
 };
 
 class OrionTradingContract

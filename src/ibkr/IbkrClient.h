@@ -6,9 +6,9 @@
  * @brief   Main interface for managing the connection and communication with Interactive Brokers.
  *
  * This module wraps the TWS/IB Gateway API, providing a state-driven client that
- * pushes market data updates to a MarketDataEngine instance. This helps bridge the layer between
- * IBKR and our trading system. Our trading system won't know IBKR specifics (data types, functions,
- * etc.).
+ * pushes market data updates to a SPSCQueue buffer for quote and trade. This helps bridge the layer
+ * between IBKR and our trading system. Our trading system won't know IBKR specifics (data types,
+ * functions, etc.).
  *
  * @version 0.1
  * @date    2026-05-26
@@ -22,6 +22,7 @@
 #include <ctime>
 #include <memory>
 #include <string>
+#include <array>
 #include <unordered_map>
 #include "rigtorp/SPSCQueue.h"
 
@@ -35,7 +36,6 @@
 #include "core/InstrumentId.h"
 #include "events/QuoteSnapshot.h"
 #include "events/TradeTick.h"
-#include "market_data/MarketDataEngine.h"
 
 /**
  *  @enum STATE
@@ -188,6 +188,8 @@ class IbkrClient : public DefaultEWrapper
      */
     void connectionClosed() override;
 
+    void flushDirtyQuotes();
+
    private:
     EReaderOSSignal osSignal_; ///< Condition variable signaling when raw network packets arrive.
     std::unique_ptr<EClientSocket> pClientSocket_;
@@ -196,10 +198,11 @@ class IbkrClient : public DefaultEWrapper
     ///< Unique ownership over the asynchronous network packet reader.
     std::unordered_map<TickerId, InstrumentId> reqIdToInstrumentId_;
     ///< Maps IBKR request IDs to InstrumentId enum.
-    std::unordered_map<InstrumentId, QuoteSnapshot> quote_cache_;
+    std::array<QuoteSnapshot, kNumInstruments> quote_cache_;
     ///< Local cache storing the latest L1 quotes per instrument.
     rigtorp::SPSCQueue<TradeTick>     &tickBuffer_;
     rigtorp::SPSCQueue<QuoteSnapshot> &quoteBuffer_;
+    std::vector<InstrumentId>          dirtyQuoteInstruments_;
     STATE   state_;      ///< Current phase of the client's connection finite state machine.
     OrderId orderId_;    ///< The next valid, sequential order ID tracked for execution.
     bool    subscribed_; ///< Track if active market data subscriptions have been initialized.
@@ -321,5 +324,7 @@ class IbkrClient : public DefaultEWrapper
 #ifdef BENCH
     std::atomic<int> droppedTicks{ 0 };
     std::atomic<int> droppedQuotes{ 0 };
+    std::atomic<int> quotesPushed{ 0 };
+    std::atomic<int> ticksPushed{ 0 };
 #endif
 };

@@ -1,7 +1,7 @@
 #include "InstrumentMarketState.h"
 
 InstrumentMarketState::InstrumentMarketState(InstrumentId id)
-  : instrumentId_(id), latestQuote_{}, hasNewQuote_(false), activeBucket_{}
+  : instrumentId_(id), lastSeenSeq_(0), latestQuote_{}, activeBucket_{}
 {
 }
 
@@ -9,10 +9,10 @@ void InstrumentMarketState::onTick(const TradeTick &tick)
 {
     // 3. Add quote to bucket quote variables if we get new quote or if new tick, but empty bucket
     // quote
-    if (hasNewQuote_ || activeBucket_.isQuoteEmpty())
+    if (latestQuote_.updateSeq != lastSeenSeq_ || activeBucket_.isQuoteEmpty())
     {
         activeBucket_.addQuote(latestQuote_);
-        hasNewQuote_ = false;
+        lastSeenSeq_ = latestQuote_.updateSeq;
     }
 
     activeBucket_.addTick(tick);
@@ -22,7 +22,6 @@ void InstrumentMarketState::onTick(const TradeTick &tick)
 void InstrumentMarketState::onQuote(const QuoteSnapshot &quote)
 {
     latestQuote_ = quote;
-    hasNewQuote_ = true;
     // TODO: log quote
 }
 
