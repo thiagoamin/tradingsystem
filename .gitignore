@@ -12,6 +12,7 @@ venv/
 
 # Build
 /build*/
+third_party/ibkr_10.37/source/JavaClient/build/
 
 # OS
 .DS_Store

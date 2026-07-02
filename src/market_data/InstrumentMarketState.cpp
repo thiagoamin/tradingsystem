@@ -27,8 +27,6 @@ void InstrumentMarketState::onQuote(const QuoteSnapshot &quote)
 
 void InstrumentMarketState::build(int64_t boundaryId)
 {
-    swapBuckets(); // O(1) — helps ring buffer not overflow while waiting to build
-
     // 1. Only build bars if we accumulated trades
     if (!flushBucket_.isEmpty())
     {

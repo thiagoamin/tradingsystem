@@ -26,6 +26,8 @@ add_executable(unit_tests
     unit/test_instrumentMarketState.cpp
 )
 
+target_compile_definitions(test_lib PUBLIC TEST)
+
 target_link_libraries(unit_tests PRIVATE test_lib GTest::gtest_main)
 
 add_executable(integration_tests

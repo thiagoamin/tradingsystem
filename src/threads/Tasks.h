@@ -59,8 +59,10 @@ class Tasks
    private:
     std::thread                        engineThread_;
     std::thread                        timerThread_;
+    std::thread                        flushThread_;
     std::atomic<bool>                  running_;
     std::atomic<bool>                  flushSignal_;
+    std::atomic<bool>                  buildSignal_;
     MarketDataEngine                  &engine_;
     rigtorp::SPSCQueue<TradeTick>     &tickBuffer_;
     rigtorp::SPSCQueue<QuoteSnapshot> &quoteBuffer_;
@@ -77,4 +79,10 @@ class Tasks
      *
      */
     void engineTask();
+
+    /**
+     * @brief Flushes the InstrumentMarketState cache and builds FeatureBars for strategies
+     *
+     */
+    void flushTask();
 };

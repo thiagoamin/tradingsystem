@@ -14,9 +14,7 @@
 struct FeatureBar
 {
     /* -------------------------------- Metadata -------------------------------- */
-    InstrumentId instrumentId;
-    int64_t      barId;
-
+    int64_t barId;
     int64_t startTimeStamp_ns; ///< UNIX epoch nanoseconds
     int64_t endTimeStamp_ns;   ///< UNIX epoch nanoseconds
     int64_t interval_ns;
@@ -44,7 +42,7 @@ struct FeatureBar
     double microPriceDevAvg;  // MP_a,t
 
     /* ------------------------------ Trade Derived ----------------------------- */
-    int32_t tradeCount;        // N^T_a,t,h
+    int64_t tradeCount;        // N^T_a,t,h
     int64_t unsignedVolume_us; // V^T_a,t,h
     int64_t signedVolume_us;   // V^T_a,t,h * ϵ_a,k
     double  dollarVolume_us;   // DV^T_a,t,h
@@ -71,4 +69,6 @@ struct FeatureBar
     double sizeQ1_us;
     double sizeQ2_us;
     double sizeQ3_us;
+
+    InstrumentId instrumentId;
 };

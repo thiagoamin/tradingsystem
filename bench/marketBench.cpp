@@ -16,7 +16,16 @@
 #include "threads/TaskUtils.h"
 #include "threads/Tasks.h"
 
-constexpr int     NUM_TICKS = 1'000'000;
+enum class BenchMode
+{
+    UNIFORM,     // 100K/sec uniform
+    BURST_MIXED, // 100K/sec avg with 4x burst spikes
+    PURE_BURST   // no rate limit, max speed
+};
+
+constexpr BenchMode MODE = BenchMode::BURST_MIXED;
+
+constexpr int     NUM_TICKS = (MODE == BenchMode::PURE_BURST) ? 10'000 : 1'000'000;
 std::atomic<int>  flushCount{ 0 };
 std::atomic<int>  barBuildCount{ 0 };
 std::atomic<bool> producerDone{ false };
@@ -40,17 +49,32 @@ void producerThread(IbkrClient &client, std::atomic<bool> &flushSignal)
 
         for (const auto &config : OrionTradingContract::kInstruments)
         {
-            auto wakeAt =
-                TimeUtils::steadyTime_ns() + 10000LL; // rate limit producer thread to 100K ticks/s
+            int64_t wakeAt = TimeUtils::steadyTime_ns();
+
+            if constexpr (MODE == BenchMode::UNIFORM)
+            {
+                wakeAt += 10000LL; // 100K/sec
+            }
+            else if constexpr (MODE == BenchMode::BURST_MIXED)
+            {
+                bool isBurst = (i % 20000) < 10000; // 10K burst, 10K quiet, alternating
+
+                wakeAt += isBurst ? 2500LL : 17500LL;
+            }
+            // PURE_BURST: no wait, wakeAt is already now
+
             // push trade tick
             client.tickByTickAllLast(
                 config.tradeReqId, 1, 1700000000 + i,
                 523.50 + (i % 100) * 0.01, // vary price slightly
                 DecimalFunctions::doubleToDecimal(100.0), attrib, "NYSE", "");
 
-            while (TimeUtils::steadyTime_ns() < wakeAt)
+            if (MODE != BenchMode::PURE_BURST)
             {
-            } // spin 1000ns = 1µs per outer iteration = 1M ticks/sec
+                while (TimeUtils::steadyTime_ns() < wakeAt)
+                {
+                }
+            } // spin 10000ns = 100K ticks/sec
 
             if (shouldFlush)
             {
@@ -78,6 +102,8 @@ void consumerThread(
     std::atomic<bool>                 &running,
     std::atomic<int>                  &quotesPushed,
     std::atomic<int>                  &ticksPushed,
+    std::atomic<bool>                 &preFlushSignal,
+    std::atomic<bool>                 &flushSignal,
     std::vector<int64_t>              &tickLatencies_ns,
     std::vector<int64_t>              &quoteLatencies_ns,
     MarketDataEngine                  &engine)
@@ -106,6 +132,13 @@ void consumerThread(
             engine.onQuoteSample(*quote);
             quoteBuffer.pop();
             ++consumedQuotes;
+        }
+
+        if (preFlushSignal.load(std::memory_order_acquire))
+        {
+            engine.preFlush();
+            preFlushSignal.store(false, std::memory_order_release);
+            flushSignal.store(true, std::memory_order_release);
         }
     }
 
@@ -154,11 +187,16 @@ void seedReqIds(IbkrClient &client)
 int main()
 {
     // Used to figure out how big spscqueue should be
-    rigtorp::SPSCQueue<TradeTick>     tradeBuffer(5000);
+    int                               buffSize = 10000;
+    rigtorp::SPSCQueue<TradeTick>     tradeBuffer(buffSize);
     rigtorp::SPSCQueue<QuoteSnapshot> quoteBuffer(4 * kNumInstruments);
+
+    printf("Buffer size: %d\n", buffSize);
+    printf("Number of ticks sending: %d\n", NUM_TICKS);
 
     std::atomic<bool> running{ true };
     std::atomic<bool> quoteSignal{ false };
+    std::atomic<bool> pushSignal{ false };
     std::atomic<bool> barSignal{ false };
 
     IbkrClient client(tradeBuffer, quoteBuffer);
@@ -189,10 +227,11 @@ int main()
         timerThread, std::ref(running), std::ref(barSignal), TimeUtils::kFifteenSec_ns);
     std::thread engineThread = std::thread(
         consumerThread, std::ref(tradeBuffer), std::ref(quoteBuffer), std::ref(running),
-        std::ref(client.quotesPushed), std::ref(client.ticksPushed), std::ref(tickLatencies_ns),
-        std::ref(quoteLatencies_ns), std::ref(engine));
+        std::ref(client.quotesPushed), std::ref(client.ticksPushed), std::ref(barSignal),
+        std::ref(pushSignal), std::ref(tickLatencies_ns), std::ref(quoteLatencies_ns),
+        std::ref(engine));
     std::thread barBuildThread =
-        std::thread(flushThread, std::ref(barSignal), std::ref(engine), std::ref(running));
+        std::thread(flushThread, std::ref(pushSignal), std::ref(engine), std::ref(running));
 
     // Producer
     std::thread mockDataThread(producerThread, std::ref(client), std::ref(quoteSignal));
@@ -225,32 +264,46 @@ int main()
     //     printf("  %ld\n", static_cast<long>(quoteLatencies_ns[i]));
 
     /* -------------------------------- Tick Data ------------------------------- */
-    std::sort(tickLatencies_ns.begin(), tickLatencies_ns.end());
-    size_t idx_p50 = static_cast<size_t>(tickLatencies_ns.size() * 0.50);
-    size_t idx_p99 = static_cast<size_t>(tickLatencies_ns.size() * 0.99);
+    if (!tickLatencies_ns.empty())
+    {
+        std::sort(tickLatencies_ns.begin(), tickLatencies_ns.end());
+        size_t idx_p50 = static_cast<size_t>(tickLatencies_ns.size() * 0.50);
+        size_t idx_p99 = static_cast<size_t>(tickLatencies_ns.size() * 0.99);
 
-    printf("Total Time:      %.2f ms\n", totalMs);
-    printf("Tick throughput: %.0f ticks/sec\n", tickThroughput);
-    printf("Tick latency p50: %ld ns\n", static_cast<long>(tickLatencies_ns[idx_p50]));
-    printf("Tick latency p99: %ld ns\n", static_cast<long>(tickLatencies_ns[idx_p99]));
-    printf("Tick latency max: %ld ns\n", static_cast<long>(tickLatencies_ns.back()));
-    printf("Tick dropped packets: %d \n", client.droppedTicks.load());
-    printf("Total tick pushed: %d \n", client.ticksPushed.load());
+        printf("Total Time:      %.2f ms\n", totalMs);
+        printf("Tick throughput: %.0f ticks/sec\n", tickThroughput);
+        printf("Tick latency p50: %ld ns\n", static_cast<long>(tickLatencies_ns[idx_p50]));
+        printf("Tick latency p99: %ld ns\n", static_cast<long>(tickLatencies_ns[idx_p99]));
+        printf("Tick latency max: %ld ns\n", static_cast<long>(tickLatencies_ns.back()));
+        printf("Tick dropped packets: %d \n", client.droppedTicks.load());
+        printf("Total tick pushed: %d \n", client.ticksPushed.load());
+    }
+    else
+    {
+        printf("Tick latency: no data\n");
+    }
 
     /* ------------------------------- Quote Data ------------------------------- */
-    size_t idxQ_p50 = static_cast<size_t>(quoteLatencies_ns.size() * 0.50);
-    size_t idxQ_p99 = static_cast<size_t>(quoteLatencies_ns.size() * 0.99);
+    if (!quoteLatencies_ns.empty())
+    {
+        size_t idxQ_p50 = static_cast<size_t>(quoteLatencies_ns.size() * 0.50);
+        size_t idxQ_p99 = static_cast<size_t>(quoteLatencies_ns.size() * 0.99);
 
-    printf("Quote throughput: %.0f quotes/sec\n", quoteThroughput);
-    printf("Quote latency p50: %ld ns\n", static_cast<long>(quoteLatencies_ns[idxQ_p50]));
-    printf("Quote latency p99: %ld ns\n", static_cast<long>(quoteLatencies_ns[idxQ_p99]));
-    printf("Quote latency max: %ld ns\n", static_cast<long>(quoteLatencies_ns.back()));
-    printf("Quote dropped packets: %d \n", client.droppedQuotes.load());
+        printf("Quote throughput: %.0f quotes/sec\n", quoteThroughput);
+        printf("Quote latency p50: %ld ns\n", static_cast<long>(quoteLatencies_ns[idxQ_p50]));
+        printf("Quote latency p99: %ld ns\n", static_cast<long>(quoteLatencies_ns[idxQ_p99]));
+        printf("Quote latency max: %ld ns\n", static_cast<long>(quoteLatencies_ns.back()));
+        printf("Quote dropped packets: %d \n", client.droppedQuotes.load());
 
-    printf("Quotes pushed: %d\n", client.quotesPushed.load());
-    printf("Quotes consumed: %zu\n", quoteLatencies_ns.size());
-    printf("Quote dropped packets: %d\n", client.droppedQuotes.load());
-    printf("Flush count %d\n", flushCount.load());
+        printf("Quotes pushed: %d\n", client.quotesPushed.load());
+        printf("Quotes consumed: %zu\n", quoteLatencies_ns.size());
+        printf("Quote dropped packets: %d\n", client.droppedQuotes.load());
+        printf("Flush count %d\n", flushCount.load());
+    }
+    else
+    {
+        printf("Quote latency: no data\n");
+    }
 
     printf("Bars built: %d\n", barBuildCount.load());
 
