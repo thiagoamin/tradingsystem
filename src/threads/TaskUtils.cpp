@@ -7,19 +7,13 @@
 void runEngineLoop(
     std::atomic<bool>                 &running,
     std::atomic<bool>                 &flushSignal,
+    std::atomic<bool>                 &buildSignal_,
     rigtorp::SPSCQueue<TradeTick>     &tickBuffer,
     rigtorp::SPSCQueue<QuoteSnapshot> &quoteBuffer,
     MarketDataEngine                  &engine)
 {
     while (running.load(std::memory_order_relaxed))
     {
-        if (flushSignal.load(std::memory_order_acquire))
-        {
-            int64_t boundaryId = TimeUtils::wallTime_ns() / TimeUtils::kFifteenSec_ns - 1;
-            engine.flush(boundaryId);
-            flushSignal.store(false, std::memory_order_release);
-        }
-
         TradeTick *tick = tickBuffer.front();
         if (tick)
         {
@@ -32,6 +26,29 @@ void runEngineLoop(
         {
             engine.onQuoteSample(*quote);
             quoteBuffer.pop();
+        }
+
+        if (flushSignal.load(std::memory_order_acquire))
+        {
+            engine.preFlush();
+            flushSignal.store(false, std::memory_order_release);
+            buildSignal_.store(true, std::memory_order_release);
+        }
+    }
+}
+
+void runBuildLoop(
+    std::atomic<bool> &running,
+    std::atomic<bool> &buildSignal,
+    MarketDataEngine  &engine)
+{
+    while (running.load(std::memory_order_relaxed))
+    {
+        if (buildSignal.load(std::memory_order_acquire))
+        {
+            int64_t boundaryId = TimeUtils::wallTime_ns() / TimeUtils::kFifteenSec_ns - 1;
+            engine.flush(boundaryId);
+            buildSignal.store(false, std::memory_order_release);
         }
     }
 }

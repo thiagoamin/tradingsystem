@@ -16,7 +16,7 @@
  *
  */
 
-#include <unordered_map>
+#include <array>
 
 #include "InstrumentMarketState.h"
 #include "core/InstrumentId.h"
@@ -32,6 +32,8 @@
 class MarketDataEngine
 {
    public:
+    MarketDataEngine();
+
     /**
      * @brief Ingests an external, market-driven trade execution event.
      *
@@ -53,17 +55,26 @@ class MarketDataEngine
      */
     void flush(int64_t id);
 
+    /**
+     * @brief swap active bucket (where engine thread pops off ring buffer and write to) and flush
+     * bucket (bucket that will be read from to build bars) to prevent race conditions
+     *
+     */
+    void preFlush();
+
    private:
     ///< State registry mapping instrument IDs to their data caches.
-    std::unordered_map<InstrumentId, InstrumentMarketState> instrumentStates_;
+    std::array<InstrumentMarketState, kNumInstruments> instrumentStates_;
 
+#ifdef TEST
    public:
-    /* -------------------------------------------------------------------------- */
-    /*                        Helper Functions for Testing                        */
-    /* -------------------------------------------------------------------------- */
+    /* ---------------------- Helper Functions for Testing ---------------------- */
     const InstrumentMarketState *getState(InstrumentId id) const
     {
-        auto it = instrumentStates_.find(id);
-        return it != instrumentStates_.end() ? &it->second : nullptr;
+        size_t idx = static_cast<size_t>(id);
+        if (idx >= kNumInstruments)
+            return nullptr;
+        return &instrumentStates_[idx];
     }
+#endif
 };

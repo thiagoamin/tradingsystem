@@ -311,6 +311,7 @@ class IbkrClient : public DefaultEWrapper
         const std::string &errorString,
         const std::string &advancedOrderRejectJson);
 
+#ifdef BENCH
    public:
     /* -------------------------------------------------------------------------- */
     /*                             Helpers for Testing                            */
@@ -321,7 +322,6 @@ class IbkrClient : public DefaultEWrapper
         reqIdToInstrumentId_[reqId] = instrumentId;
     }
 
-#ifdef BENCH
     std::atomic<int> droppedTicks{ 0 };
     std::atomic<int> droppedQuotes{ 0 };
     std::atomic<int> quotesPushed{ 0 };

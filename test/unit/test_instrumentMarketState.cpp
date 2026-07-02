@@ -44,6 +44,7 @@ TEST(InstrumentMarketStateTest, OneBarOnFirstBoundary)
 {
     InstrumentMarketState s(InstrumentId::SPY);
     s.onTick(makeTick(kB0)); // populates bucket 0
+    s.swapBuckets();         // hand bucket 0 off to the flush side
     s.build(0);              // build 0 - 15s
     s.onTick(makeTick(kB1)); // check that it's not in bucket
 
@@ -55,9 +56,11 @@ TEST(InstrumentMarketStateTest, TwoBarsOnTwoBoundaries)
 {
     InstrumentMarketState s(InstrumentId::SPY);
     s.onTick(makeTick(kB0));
+    s.swapBuckets();
     s.build(0); // build 0 - 15s
     s.onTick(makeTick(kB1));
     s.onTick(makeTick(kB2 - 1'000'000'000LL));
+    s.swapBuckets();
     s.build(1); // build 1 - 30s
 
     // at time t=30s
@@ -68,8 +71,10 @@ TEST(InstrumentMarketStateTest, EmptyBucketNotEmitted)
 {
     // First tick lands in bucket 1 — bucket 0 was never populated, so no bar for it
     InstrumentMarketState s(InstrumentId::SPY);
+    s.swapBuckets();
     s.build(0);
     s.onTick(makeTick(kB1)); // first tick at 15s
+    s.swapBuckets();
     s.build(1);
     s.onTick(makeTick(kB2)); // emits bar for bucket 1 only
 
@@ -89,6 +94,7 @@ TEST(InstrumentMarketStateTest, BarMetadataIsCorrect)
     TradeTick t2    = makeTick(14'000'000'000LL);
     t2.instrumentId = InstrumentId::AAPL;
     s.onTick(t2);
+    s.swapBuckets();
     s.build(0); // build 0 - 15s
 
     TradeTick t3    = makeTick(kB1);
@@ -108,6 +114,7 @@ TEST(InstrumentMarketStateTest, QuoteBeforeTickAppearsInBar)
     InstrumentMarketState s(InstrumentId::SPY);
     s.onQuote(makeQuote(99.0, 101.0));
     s.onTick(makeTick(kB0));
+    s.swapBuckets();
     s.build(0); // build 0 - 15s
     s.onTick(makeTick(kB1));
 
@@ -123,10 +130,12 @@ TEST(InstrumentMarketStateTest, LatestQuoteCarriedIntoNewBarIfNoNewQuote)
     InstrumentMarketState s(InstrumentId::SPY);
     s.onQuote(makeQuote(99.0, 101.0));
     s.onTick(makeTick(kB0));
+    s.swapBuckets();
     s.build(0); // build 0 - 15s
     s.onTick(makeTick(kB1));
     ASSERT_EQ(s.barCount(), 1u); // at t=15s
 
+    s.swapBuckets();
     s.build(1); // build 1 - 30s
     s.onTick(makeTick(kB2));
     ASSERT_EQ(s.barCount(), 2u); // at t=30s
@@ -142,6 +151,7 @@ TEST(InstrumentMarketStateTest, BarBucketIdMatchesWindow)
 {
     InstrumentMarketState s(InstrumentId::SPY);
     s.onTick(makeTick(kB0 + 3'000'000'000LL));
+    s.swapBuckets();
     s.build(0); // build 0 - 15s
     s.onTick(makeTick(kB1));
 

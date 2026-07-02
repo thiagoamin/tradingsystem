@@ -30,16 +30,25 @@ static QuoteSnapshot makeQuote(InstrumentId id, double bid, double ask)
 
 // ── Routing & bar emission ────────────────────────────────────────────────────
 
-TEST(IntegrationTest, UnseenInstrumentReturnsNullptr)
+TEST(IntegrationTest, UnseenInstrumentIsPreRegisteredNotNull)
+{
+    // All real instruments are pre-populated at construction, so an instrument
+    // with no activity yet is still a valid, non-null entry.
+    MarketDataEngine engine;
+    EXPECT_NE(engine.getState(InstrumentId::NVDA), nullptr);
+}
+
+TEST(IntegrationTest, OutOfRangeInstrumentReturnsNullptr)
 {
     MarketDataEngine engine;
-    EXPECT_EQ(engine.getState(InstrumentId::NVDA), nullptr);
+    EXPECT_EQ(engine.getState(InstrumentId::SIZE), nullptr);
 }
 
 TEST(IntegrationTest, SingleInstrumentBarEmittedAfterBoundary)
 {
     MarketDataEngine engine;
     engine.onTradeTick(makeTick(InstrumentId::SPY, kB0));
+    engine.preFlush();
     engine.flush(0); // build 0 - 15s
 
     // at t=15s
@@ -54,8 +63,10 @@ TEST(IntegrationTest, TwoInstrumentsRoutedIndependently)
     MarketDataEngine engine;
     engine.onTradeTick(makeTick(InstrumentId::SPY, kB0));
     engine.onTradeTick(makeTick(InstrumentId::QQQ, kB0));
+    engine.preFlush();
     engine.flush(0);                                      // build 0 - 15s
     engine.onTradeTick(makeTick(InstrumentId::SPY, kB1)); // SPY bar 0 emitted
+    engine.preFlush();
     engine.flush(1);                                      // build 1 - 30s
 
     // at t=30s
@@ -72,6 +83,7 @@ TEST(IntegrationTest, QuoteRoutedToCorrectInstrument)
     MarketDataEngine engine;
     engine.onQuoteSample(makeQuote(InstrumentId::TSLA, 200.0, 202.0));
     engine.onTradeTick(makeTick(InstrumentId::TSLA, kB0, 201.0));
+    engine.preFlush();
     engine.flush(0); // build 0 - 15s
 
     // at t=15s
@@ -86,6 +98,7 @@ TEST(IntegrationTest, QuoteForOneInstrumentDoesNotPollutAnother)
     MarketDataEngine engine;
     engine.onQuoteSample(makeQuote(InstrumentId::SPY, 99.0, 101.0));
     engine.onTradeTick(makeTick(InstrumentId::QQQ, kB0));
+    engine.preFlush();
     engine.flush(0); // build 0 - 15s
 
     // at t=15s

@@ -1,7 +1,7 @@
 #include "InstrumentMarketState.h"
 
 InstrumentMarketState::InstrumentMarketState(InstrumentId id)
-  : instrumentId_(id), lastSeenSeq_(0), latestQuote_{}, activeBucket_{}
+  : instrumentId_(id), lastSeenSeq_(0), latestQuote_{}, activeBucket_{}, flushBucket_{}
 {
 }
 
@@ -28,12 +28,12 @@ void InstrumentMarketState::onQuote(const QuoteSnapshot &quote)
 void InstrumentMarketState::build(int64_t boundaryId)
 {
     // 1. Only build bars if we accumulated trades
-    if (!activeBucket_.isEmpty())
+    if (!flushBucket_.isEmpty())
     {
-        FeatureBar currBar_15s = activeBucket_.build(instrumentId_, boundaryId);
+        FeatureBar currBar_15s = flushBucket_.build(instrumentId_, boundaryId);
         bars_15s_.push_back(currBar_15s);
     }
 
     // 2. Clean up state every 15s to clear cached data
-    activeBucket_.clear();
+    flushBucket_.clear();
 }

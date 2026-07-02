@@ -61,22 +61,27 @@ class InstrumentMarketState
      */
     void build(int64_t boundaryId);
 
+    /**
+     * @brief Swaps activeBucket_ and flushBucket_ to prevent race conditions and buffer overflow
+     * from having build in the same thread as taking data from the ring buffers O(1)
+     *
+     */
+    void swapBuckets() noexcept { std::swap(activeBucket_, flushBucket_); }
+
    private:
-    InstrumentId  instrumentId_;
-    uint32_t      lastSeenSeq_;
-    QuoteSnapshot latestQuote_; ///< Cached recent quote snapshot.
-    MarketBucket  activeBucket_;
-    ///< Current raw sub-window accumulation container for data filtering.
+    QuoteSnapshot           latestQuote_;  ///< Cached recent quote snapshot.
+    MarketBucket            activeBucket_; // consumer writes here
+    MarketBucket            flushBucket_;  // flush reads here
+    std::vector<FeatureBar> bars_15s_;     ///< Historical storage array of finalized 15-second
+                                           ///< intervals used for Strategy.
 
-    std::vector<FeatureBar> bars_15s_; ///< Historical storage array of finalized 15-second
-                                       ///< intervals used for Strategy.
-
+    InstrumentId instrumentId_;
+    uint32_t     lastSeenSeq_;
+#ifdef TEST
    public:
-    /* -------------------------------------------------------------------------- */
-    /*                        Helper Functions for Testing                        */
-    /* -------------------------------------------------------------------------- */
-
+    /* ---------------------- Helper Functions for Testing ---------------------- */
     const std::vector<FeatureBar> &getBars() const { return bars_15s_; }
 
     size_t barCount() const { return bars_15s_.size(); }
+#endif
 };
