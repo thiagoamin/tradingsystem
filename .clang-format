@@ -19,6 +19,7 @@ AllowShortLoopsOnASingleLine: false
 
 AlwaysBreakBeforeMultilineStrings: false
 AlwaysBreakTemplateDeclarations: MultiLine
+BreakTemplateDeclarations: Yes
 
 BinPackArguments: true
 BinPackParameters: false

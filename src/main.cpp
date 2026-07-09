@@ -8,6 +8,10 @@
 #include "market_data/MarketDataEngine.h"
 #include "threads/Tasks.h"
 
+#include "transform/Transformer.h"
+#include "transform/residualization/FactorSpec.h"
+#include "transform/TransformPipeline.h"
+
 const unsigned MAX_ATTEMPTS = 5;
 const unsigned SLEEP_TIME   = 3;
 
