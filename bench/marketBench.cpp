@@ -25,7 +25,7 @@ enum class BenchMode
 
 constexpr BenchMode MODE = BenchMode::BURST_MIXED;
 
-constexpr int     NUM_TICKS = (MODE == BenchMode::PURE_BURST) ? 10'000 : 1'000'000;
+constexpr int     NUM_TICKS = (MODE == BenchMode::PURE_BURST) ? 10'000 : 6'000'000;
 std::atomic<int>  flushCount{ 0 };
 std::atomic<int>  barBuildCount{ 0 };
 std::atomic<bool> producerDone{ false };
@@ -47,34 +47,26 @@ void producerThread(IbkrClient &client, std::atomic<bool> &flushSignal)
         bool shouldFlush =
             flushSignal.load(std::memory_order_acquire); // read ONCE per outer iteration
 
+        int64_t wakeAt = TimeUtils::steadyTime_ns();
+
+        if constexpr (MODE == BenchMode::UNIFORM)
+        {
+            wakeAt += 10000LL; // 100K/sec per instrument
+        }
+        else if constexpr (MODE == BenchMode::BURST_MIXED)
+        {
+            bool isBurst = (i % 20000) < 10000;   // 10K burst rounds, 10K quiet rounds, alternating
+            wakeAt += isBurst ? 2500LL : 17500LL; // avg 100K/sec per instrument, 4x burst spikes
+        }
+        // PURE_BURST: no wait, wakeAt is already now
+
         for (const auto &config : OrionTradingContract::kInstruments)
         {
-            int64_t wakeAt = TimeUtils::steadyTime_ns();
-
-            if constexpr (MODE == BenchMode::UNIFORM)
-            {
-                wakeAt += 10000LL; // 100K/sec
-            }
-            else if constexpr (MODE == BenchMode::BURST_MIXED)
-            {
-                bool isBurst = (i % 20000) < 10000; // 10K burst, 10K quiet, alternating
-
-                wakeAt += isBurst ? 2500LL : 17500LL;
-            }
-            // PURE_BURST: no wait, wakeAt is already now
-
             // push trade tick
             client.tickByTickAllLast(
                 config.tradeReqId, 1, 1700000000 + i,
                 523.50 + (i % 100) * 0.01, // vary price slightly
                 DecimalFunctions::doubleToDecimal(100.0), attrib, "NYSE", "");
-
-            if (MODE != BenchMode::PURE_BURST)
-            {
-                while (TimeUtils::steadyTime_ns() < wakeAt)
-                {
-                }
-            } // spin 10000ns = 100K ticks/sec
 
             if (shouldFlush)
             {
@@ -87,6 +79,14 @@ void producerThread(IbkrClient &client, std::atomic<bool> &flushSignal)
                 flushCount++;
             }
         }
+
+        if (MODE != BenchMode::PURE_BURST)
+        {
+            while (TimeUtils::steadyTime_ns() < wakeAt)
+            {
+            }
+        } // spin 10000ns = 100K ticks/sec
+
         client.flushDirtyQuotes();
 
         if (shouldFlush)
@@ -94,6 +94,65 @@ void producerThread(IbkrClient &client, std::atomic<bool> &flushSignal)
     }
     producerDone.store(true, std::memory_order_release);
 }
+
+// void producerThread(IbkrClient &client, std::atomic<bool> &flushSignal)
+// {
+//     TickAttribLast attrib{};
+//     TickAttrib     attribQuote{};
+
+//     // push 100,000 * 8 = 800,00 ticks out
+//     for (int i = 0; i < NUM_TICKS; ++i)
+//     {
+//         bool shouldFlush =
+//             flushSignal.load(std::memory_order_acquire); // read ONCE per outer iteration
+
+//         for (const auto &config : OrionTradingContract::kInstruments)
+//         {
+//             int64_t wakeAt = TimeUtils::steadyTime_ns();
+
+//             if constexpr (MODE == BenchMode::UNIFORM)
+//             {
+//                 wakeAt += 10000LL; // 100K/sec
+//             }
+//             else if constexpr (MODE == BenchMode::BURST_MIXED)
+//             {
+//                 bool isBurst = (i % 20000) < 10000; // 10K burst, 10K quiet, alternating
+
+//                 wakeAt += isBurst ? 2500LL : 17500LL;
+//             }
+//             // PURE_BURST: no wait, wakeAt is already now
+
+//             // push trade tick
+//             client.tickByTickAllLast(
+//                 config.tradeReqId, 1, 1700000000 + i,
+//                 523.50 + (i % 100) * 0.01, // vary price slightly
+//                 DecimalFunctions::doubleToDecimal(100.0), attrib, "NYSE", "");
+
+//             if (MODE != BenchMode::PURE_BURST)
+//             {
+//                 while (TimeUtils::steadyTime_ns() < wakeAt)
+//                 {
+//                 }
+//             } // spin 10000ns = 100K ticks/sec
+
+//             if (shouldFlush)
+//             {
+//                 client.tickPrice(config.quoteReqId, BID, 523.10 + (i % 100) * 0.01, attribQuote);
+//                 client.tickPrice(config.quoteReqId, ASK, 523.12 + (i % 100) * 0.01, attribQuote);
+//                 client.tickSize(
+//                     config.quoteReqId, BID_SIZE, DecimalFunctions::doubleToDecimal(100.0));
+//                 client.tickSize(
+//                     config.quoteReqId, ASK_SIZE, DecimalFunctions::doubleToDecimal(50.0));
+//                 flushCount++;
+//             }
+//         }
+//         client.flushDirtyQuotes();
+
+//         if (shouldFlush)
+//             flushSignal.store(false, std::memory_order_release);
+//     }
+//     producerDone.store(true, std::memory_order_release);
+// }
 
 // Consumer thread: drain the queue, record latency
 void consumerThread(
@@ -116,10 +175,10 @@ void consumerThread(
         TradeTick *tick = tickBuffer.front();
         if (tick)
         {
+            engine.onTradeTick(*tick);
             int64_t now = TimeUtils::steadyTime_ns();
             tickLatencies_ns.push_back(
                 now - tick->recvSteadyTimestamp_ns); // how long from market ingestion to build
-            engine.onTradeTick(*tick);
             tickBuffer.pop();
             ++consumedTrades;
         }
@@ -187,7 +246,7 @@ void seedReqIds(IbkrClient &client)
 int main()
 {
     // Used to figure out how big spscqueue should be
-    int                               buffSize = 10000;
+    int                               buffSize = 80000;
     rigtorp::SPSCQueue<TradeTick>     tradeBuffer(buffSize);
     rigtorp::SPSCQueue<QuoteSnapshot> quoteBuffer(4 * kNumInstruments);
 
@@ -286,6 +345,7 @@ int main()
     /* ------------------------------- Quote Data ------------------------------- */
     if (!quoteLatencies_ns.empty())
     {
+        std::sort(quoteLatencies_ns.begin(), quoteLatencies_ns.end());
         size_t idxQ_p50 = static_cast<size_t>(quoteLatencies_ns.size() * 0.50);
         size_t idxQ_p99 = static_cast<size_t>(quoteLatencies_ns.size() * 0.99);
 
