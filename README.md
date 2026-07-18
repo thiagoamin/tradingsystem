@@ -52,7 +52,7 @@ This repository is building a modular algorithmic trading platform with two main
 - `src/utils/` — shared utility code (logging, time handling, etc.)
 - `test/` — gtest unit + integration tests
 - - `third_party/` — vendored/external dependencies
-- `benchmark/` — microbenchmarks for hot-path components (queue throughput, buffer swap latency, feature computation cost); results and design rationale documented in [`benchmark/README.md`](benchmark/README.md)
+- `bench/` — microbenchmarks for hot-path components (queue throughput, buffer swap latency, feature computation cost); results and design rationale documented in [`bench/README.md`](benchmark/README.md)
 
 ## Build
 
