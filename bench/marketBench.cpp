@@ -23,9 +23,9 @@ enum class BenchMode
     PURE_BURST   // no rate limit, max speed
 };
 
-constexpr BenchMode MODE = BenchMode::BURST_MIXED;
+constexpr BenchMode MODE = BenchMode::PURE_BURST;
 
-constexpr int     NUM_TICKS = (MODE == BenchMode::PURE_BURST) ? 10'000 : 6'000'000;
+constexpr int     NUM_TICKS = (MODE == BenchMode::BURST_MIXED) ? 100'000 : 6'000'000;
 std::atomic<int>  flushCount{ 0 };
 std::atomic<int>  barBuildCount{ 0 };
 std::atomic<bool> producerDone{ false };
@@ -40,6 +40,23 @@ void producerThread(IbkrClient &client, std::atomic<bool> &flushSignal)
 {
     TickAttribLast attrib{};
     TickAttrib     attribQuote{};
+
+    int64_t nowWall            = TimeUtils::wallTime_ns();
+    int64_t currentWindowStart = (nowWall / TimeUtils::kFifteenSec_ns) * TimeUtils::kFifteenSec_ns;
+    int64_t nextFlushBoundary  = currentWindowStart + TimeUtils::kFifteenSec_ns;
+
+    constexpr int64_t kBurstLeadTimeNs = 3'000'000'000LL; // start bursting 3s before boundary
+    constexpr int64_t kBurstTailTimeNs = 300'000'000LL;   // keep running 300ms past boundary
+    int64_t           burstStartTime   = nextFlushBoundary - kBurstLeadTimeNs;
+    int64_t           burstEndTarget   = nextFlushBoundary + kBurstTailTimeNs;
+
+    if constexpr (MODE == BenchMode::PURE_BURST)
+    {
+        // Phase 1: wait until just before the boundary
+        while (TimeUtils::wallTime_ns() < burstStartTime)
+        {
+        }
+    }
 
     // push 100,000 * 8 = 800,00 ticks out
     for (int i = 0; i < NUM_TICKS; ++i)
@@ -58,7 +75,6 @@ void producerThread(IbkrClient &client, std::atomic<bool> &flushSignal)
             bool isBurst = (i % 20000) < 10000;   // 10K burst rounds, 10K quiet rounds, alternating
             wakeAt += isBurst ? 2500LL : 17500LL; // avg 100K/sec per instrument, 4x burst spikes
         }
-        // PURE_BURST: no wait, wakeAt is already now
 
         for (const auto &config : OrionTradingContract::kInstruments)
         {
@@ -92,67 +108,15 @@ void producerThread(IbkrClient &client, std::atomic<bool> &flushSignal)
         if (shouldFlush)
             flushSignal.store(false, std::memory_order_release);
     }
+
+    if constexpr (MODE == BenchMode::PURE_BURST)
+    {
+        while (TimeUtils::wallTime_ns() < burstEndTarget)
+        {
+        }
+    }
     producerDone.store(true, std::memory_order_release);
 }
-
-// void producerThread(IbkrClient &client, std::atomic<bool> &flushSignal)
-// {
-//     TickAttribLast attrib{};
-//     TickAttrib     attribQuote{};
-
-//     // push 100,000 * 8 = 800,00 ticks out
-//     for (int i = 0; i < NUM_TICKS; ++i)
-//     {
-//         bool shouldFlush =
-//             flushSignal.load(std::memory_order_acquire); // read ONCE per outer iteration
-
-//         for (const auto &config : OrionTradingContract::kInstruments)
-//         {
-//             int64_t wakeAt = TimeUtils::steadyTime_ns();
-
-//             if constexpr (MODE == BenchMode::UNIFORM)
-//             {
-//                 wakeAt += 10000LL; // 100K/sec
-//             }
-//             else if constexpr (MODE == BenchMode::BURST_MIXED)
-//             {
-//                 bool isBurst = (i % 20000) < 10000; // 10K burst, 10K quiet, alternating
-
-//                 wakeAt += isBurst ? 2500LL : 17500LL;
-//             }
-//             // PURE_BURST: no wait, wakeAt is already now
-
-//             // push trade tick
-//             client.tickByTickAllLast(
-//                 config.tradeReqId, 1, 1700000000 + i,
-//                 523.50 + (i % 100) * 0.01, // vary price slightly
-//                 DecimalFunctions::doubleToDecimal(100.0), attrib, "NYSE", "");
-
-//             if (MODE != BenchMode::PURE_BURST)
-//             {
-//                 while (TimeUtils::steadyTime_ns() < wakeAt)
-//                 {
-//                 }
-//             } // spin 10000ns = 100K ticks/sec
-
-//             if (shouldFlush)
-//             {
-//                 client.tickPrice(config.quoteReqId, BID, 523.10 + (i % 100) * 0.01, attribQuote);
-//                 client.tickPrice(config.quoteReqId, ASK, 523.12 + (i % 100) * 0.01, attribQuote);
-//                 client.tickSize(
-//                     config.quoteReqId, BID_SIZE, DecimalFunctions::doubleToDecimal(100.0));
-//                 client.tickSize(
-//                     config.quoteReqId, ASK_SIZE, DecimalFunctions::doubleToDecimal(50.0));
-//                 flushCount++;
-//             }
-//         }
-//         client.flushDirtyQuotes();
-
-//         if (shouldFlush)
-//             flushSignal.store(false, std::memory_order_release);
-//     }
-//     producerDone.store(true, std::memory_order_release);
-// }
 
 // Consumer thread: drain the queue, record latency
 void consumerThread(
@@ -313,14 +277,6 @@ int main()
     double totalMs         = (endTime - startTime) / 1e6;
     double tickThroughput  = (NUM_TICKS * kNumInstruments) / (totalMs / 1000.0);
     double quoteThroughput = (quoteLatencies_ns.size()) / (totalMs / 1000.0);
-
-    // printf("First 20 tick latencies (ns):\n"); // debugging
-    // for (size_t i = 0; i < 20 && i < tickLatencies_ns.size(); ++i)
-    //     printf("  %ld\n", static_cast<long>(tickLatencies_ns[i]));
-
-    // printf("First 20 quote latencies (ns):\n");
-    // for (size_t i = 0; i < 20 && i < quoteLatencies_ns.size(); ++i)
-    //     printf("  %ld\n", static_cast<long>(quoteLatencies_ns[i]));
 
     /* -------------------------------- Tick Data ------------------------------- */
     if (!tickLatencies_ns.empty())
