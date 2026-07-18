@@ -121,6 +121,8 @@ FeatureBar MarketBucket::build(InstrumentId id, int64_t bucketId) const
         auto sortedPrices = prices_;
         auto sortedSizes  = sizes_us_;
 
+        /*  Candidate fix: replace with a streaming/approximate quantile estimator (P² algorithm)
+  for O(1) per-tick update instead of O(n log n) at flush time. Not yet implemented. */
         std::sort(sortedPrices.begin(), sortedPrices.end());
         std::sort(sortedSizes.begin(), sortedSizes.end());
 
