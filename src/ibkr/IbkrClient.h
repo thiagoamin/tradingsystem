@@ -317,7 +317,7 @@ class IbkrClient : public DefaultEWrapper
     /*                             Helpers for Testing                            */
     /* -------------------------------------------------------------------------- */
 
-    void inline injectReqId(TickerId reqId, InstrumentId instrumentId)
+    void injectReqId(TickerId reqId, InstrumentId instrumentId)
     {
         reqIdToInstrumentId_[reqId] = instrumentId;
     }
