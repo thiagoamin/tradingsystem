@@ -51,8 +51,8 @@ This repository is building a modular algorithmic trading platform with two main
 - `src/core/` — shared types/utilities across layers
 - `src/utils/` — shared utility code (logging, time handling, etc.)
 - `test/` — gtest unit + integration tests
-- - `third_party/` — vendored/external dependencies
-- `bench/` — microbenchmarks for hot-path components (queue throughput, buffer swap latency, feature computation cost); results and design rationale documented in [`bench/README.md`](benchmark/README.md)
+- `third_party/` — vendored/external dependencies
+- `bench/` — microbenchmarks for hot-path components (queue throughput, buffer swap latency, feature computation cost); results and design rationale documented in [`bench/README.md`](bench/README.md)
 
 ## Build
 
@@ -79,7 +79,7 @@ Currently developed on macOS with **target deployment platform in Linux** since 
 
 **Environment**
 - Protobuf 3.12.4
-- libbid (Intel RDFP Math Library — decimal floating-point arithmetic for price/quantity precision)
+- libbid (Intel RDFP Math Library — decimal floating-point arithmetic used to abstract away IBKR-specific dependencies)
 - Clang 14+ (developed against Clang 22)
 - GCC 13+ (required for full C++20 support)
 
@@ -126,50 +126,4 @@ C++20 support requires:
   2. **Build** — builds the `prod` preset inside a prebuilt Linux container image with dependencies (Protobuf, libbid) preinstalled
   3. **Test** — builds the `test` preset and runs the full `ctest` suite
 
-  See [`.github/workflows/`](.github/workflows/) for the full pipeline and [`Dockerfile`](Dockerfile) for the CI image definition.
-
-<details>
-<summary>Dockerfile (CI image — prebuilds Protobuf and libbid for Linux)</summary>
-
-```dockerfile
-FROM --platform=linux/amd64 ubuntu:24.04
-
-ARG DEBIAN_FRONTEND=noninteractive
-
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    cmake \
-    git \
-    wget \
-    python3 \
-    python3-pip \
-    valgrind \
-    autoconf \
-    automake \
-    libtool \
-    pkg-config \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Protobuf 3.12.4
-RUN wget https://github.com/protocolbuffers/protobuf/releases/download/v3.12.4/protobuf-cpp-3.12.4.tar.gz && \
-    tar -xzf protobuf-cpp-3.12.4.tar.gz && \
-    cd protobuf-3.12.4 && \
-    ./configure && \
-    make -j$(nproc) && \
-    make install && \
-    ldconfig && \
-    cd / && \
-    rm -rf protobuf-3.12.4 protobuf-cpp-3.12.4.tar.gz
-
-# Install libbid
-RUN git clone https://github.com/xmake-mirror/IntelRDFPMathLib.git && \
-    cd IntelRDFPMathLib/LIBRARY && \
-    make CC=gcc && \
-    cp libbid.a /usr/local/lib/ && \
-    cd / && \
-    rm -rf IntelRDFPMathLib
-
-WORKDIR /workspace
-```
-
-</details>
+  See [`.github/workflows/`](.github/workflows/) for the full pipeline and [`Dockerfile`](Dockerfile.ci) for the CI image definition (prebuilds Protobuf and libbid for Linux).
