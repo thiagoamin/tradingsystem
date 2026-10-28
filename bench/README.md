@@ -81,7 +81,7 @@ constant (`wakeAt` pacing) changed between them:
 
 | Metric | p50 | p99 | Notes |
 |---|---|---|---|
-| Tick → processed latency | 250–333 ns | 2.4–31.6 µs | queue dequeue through full `onTradeTick()` processing (Welford stats, OHLC update) |
+| Tick → processed latency | 250–333 ns | 2.4–31.6 µs | measured from when tick is received and timestamped, through spsc queue dequeue, to full `onTradeTick()` processing (Welford stats, OHLC update) |
 | Quote → processed latency | ~15 µs | 19–39 µs | lower volume (32 quotes/sec observed); one run showed p99 spike to 384 µs, not yet root-caused |
 | Sustained throughput | 785–794K ticks/sec combined | | zero packet loss at buffer depth ≥ 80,000 |
 | Flush time (per 15s bar-build call) | ~176 ms avg | up to 256 ms | quartile sort enabled during these runs — see Known Bottlenecks|
